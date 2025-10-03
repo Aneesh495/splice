@@ -1,0 +1,21 @@
+# Native build and local evidence
+/build/
+/build-*/
+/.cache/
+/.agent-local/
+/acceptance/artifacts/
+/benchmarks/raw/
+/core
+*.core
+*.dSYM/
+
+# Editor and OS metadata
+.DS_Store
+.vscode/
+.idea/
+
+# Local history and credentials
+.history/
+*.sqlite3
+*.db
+.env

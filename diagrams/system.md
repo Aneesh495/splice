@@ -1,0 +1,11 @@
+flowchart LR
+  B[Source bytes] --> S[SourceBuffer and spans]
+  S --> L[Quote-preserving Lexer]
+  L --> P[Typed Parser and AST]
+  P --> E[Context-aware Expander]
+  E --> D[Ordered Descriptor Plan]
+  D --> R[Owning Runtime Event Loop]
+  R --> O[fork exec waitpid]
+  R --> T[termios and tcsetpgrp]
+  R --> I[Versioned Trace]
+  P --> LS[Syntax-only Language Tools]
