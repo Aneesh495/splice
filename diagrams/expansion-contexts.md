@@ -1,0 +1,11 @@
+flowchart LR
+  Word[syntax::Word] --> CW[CommandWord]
+  Word --> AV[Assignment]
+  Word --> RO[Redirection]
+  Word --> HD[HereDocument]
+  Word --> PR[Prompt]
+  CW --> Fields[Field splitting and pathname expansion]
+  AV --> Single[Assignment value]
+  RO --> One[Exactly one redirection operand]
+  HD --> Body[Delimiter and body policy]
+  PR --> Render[Prompt rendering without execution]

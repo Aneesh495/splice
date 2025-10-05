@@ -2,7 +2,7 @@
 
 Splice is an inspectable Unix shell and process runtime. Its implementation boundary is deliberately visible: source bytes become quote-preserving tokens, a typed syntax tree, context-aware expansions, a descriptor plan, real Unix processes, terminal state transitions, and observable statuses.
 
-This repository is being built incrementally from an empty directory. The current first increment provides a strict C++20/CMake build and the native `splice` executable with stable command-line entry points. It does not yet claim shell compatibility or complete acceptance. The live implementation status is in [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+This repository is being built incrementally from an empty directory. The current checkpoint provides a strict C++20/CMake build, immutable source diagnostics, quote-preserving lexing, a typed AST, context-aware expansion state, and JSON token/AST/descriptor-plan inspection. It does not yet claim shell compatibility or complete acceptance. The live implementation status is in [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 ## Quick start
 
@@ -33,4 +33,4 @@ As implementation lands, examples will be executable through Splice itself and l
 
 ## Current limitations
 
-The initial checkpoint is not a usable shell yet. Parsing, expansion, process supervision, terminal editing, language tools, evidence campaigns, and platform verification are deliberately staged behind the first build. No Bash or POSIX conformance claim is made until the feature registry and real-shell tests support it.
+The current checkpoint is still not a usable shell: real process launch, status ownership, interactive terminal control, editor/history, language tools, evidence campaigns, and Linux verification are staged behind the next increments. The syntax-only tools never execute command substitutions or redirections. No Bash or POSIX conformance claim is made until the feature registry and real-shell tests support it.

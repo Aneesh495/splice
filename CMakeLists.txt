@@ -18,7 +18,16 @@ if(SPLICE_ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
   target_link_options(splice_options INTERFACE -fsanitize=address,undefined)
 endif()
 
-add_executable(splice src/app/main.cpp)
+add_executable(splice
+  src/app/main.cpp
+  src/syntax/ast.cpp
+  src/syntax/lexer.cpp
+  src/syntax/parser.cpp
+  src/syntax/token.cpp
+  src/expand/expander.cpp
+  src/expand/state.cpp
+  src/plan/plan.cpp
+)
 target_link_libraries(splice PRIVATE splice_options)
 target_include_directories(splice PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -26,6 +35,11 @@ include(CTest)
 if(BUILD_TESTING)
   add_test(NAME splice_version COMMAND splice --version)
   add_test(NAME splice_help COMMAND splice --help)
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_Interpreter_FOUND)
+    add_test(NAME splice_syntax_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/syntax_cases.py $<TARGET_FILE:splice>)
+  endif()
 endif()
 
 install(TARGETS splice RUNTIME DESTINATION bin)
