@@ -33,4 +33,4 @@ As implementation lands, examples will be executable through Splice itself and l
 
 ## Current limitations
 
-The current checkpoint is still not a usable shell: real process launch, status ownership, interactive terminal control, editor/history, language tools, evidence campaigns, and Linux verification are staged behind the next increments. The syntax-only tools never execute command substitutions or redirections. No Bash or POSIX conformance claim is made until the feature registry and real-shell tests support it.
+The current checkpoint has a usable noninteractive core for simple commands, lists, pipelines, parameter/field/pathname expansion, ordered redirections, parent builtins, and real external process launch. It is still not a complete interactive shell: terminal editor, SIGCHLD wakeup integration, full job-control commands, traps, advanced language forms, evidence campaigns, and Linux verification are staged behind later increments. No Bash or POSIX conformance claim is made until the feature registry and real-shell tests support it.

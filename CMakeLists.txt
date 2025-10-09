@@ -27,6 +27,8 @@ add_executable(splice
   src/expand/expander.cpp
   src/expand/state.cpp
   src/plan/plan.cpp
+  src/builtins/builtins.cpp
+  src/runtime/runtime.cpp
 )
 target_link_libraries(splice PRIVATE splice_options)
 target_include_directories(splice PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -39,6 +41,10 @@ if(BUILD_TESTING)
   if(Python3_Interpreter_FOUND)
     add_test(NAME splice_syntax_cases
       COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/syntax_cases.py $<TARGET_FILE:splice>)
+    add_test(NAME splice_runtime_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_cases.py $<TARGET_FILE:splice>)
+    add_test(NAME splice_runtime_fault_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_fault_cases.py $<TARGET_FILE:splice>)
   endif()
 endif()
 

@@ -18,23 +18,25 @@ Last updated: 2026-10-02
 - Quote-preserving lexer for words, parameters, arithmetic/command substitutions, operators, IO numbers, and incomplete quotes.
 - Typed AST for simple commands, ordered redirections, pipelines, AND/OR chains, sequences, backgrounds, subshells, and groups.
 - Expansion state and planner contracts for parameters, assignments, field/pathname expansion, and ordered descriptor operations.
-- Initial documentation, feature registry, focused semantic cases, and editable Mermaid diagrams.
+- Native builtins with parent/child execution distinction, parent descriptor save/restore, and stateful `cd`, assignments, export, options, read, printf, and exit paths.
+- Single-owner runtime with real `pipe`, `fork`, process-group setup, `dup2`, `execve`, close-on-exec launch error channel, foreground `waitpid`, background job retention, and pipefail aggregation.
+- Initial documentation, feature registry, focused syntax/runtime/fault cases, and editable Mermaid diagrams.
 
 ## Commands and outcomes
 
 - `git init -b main`: passed.
 - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug`: passed on macOS arm64 with AppleClang 21.0.0.21000334.
-- `cmake --build build`: passed after adding syntax, expansion, and plan modules.
-- `ctest --test-dir build --output-on-failure`: passed, 3/3 tests, including six individually asserted Python syntax cases.
-- `./build/splice --dump-tokens -c 'printf "%s\\n" hello | tr a-z A-Z'`: passed and emitted quote-preserving token JSON.
-- `./build/splice --dump-ast -n -c 'echo hi >out 2>&1 && echo done'`: passed and emitted AST JSON.
-- `./build/splice --dump-plan -c 'echo hi >out 2>&1'`: passed and emitted open-then-duplicate descriptor actions.
+- `cmake --build build`: passed after adding the native builtin and runtime modules with no compiler warnings.
+- `ctest --test-dir build --output-on-failure`: passed, 5/5 tests, including 6 syntax cases, 14 real-process cases, and 3 launch-failure cases.
+- `./build/splice -c 'printf "%s\\n" hello | tr a-z A-Z'`: passed through Splice-owned pipe/fork/exec and produced `HELLO`.
+- `./build/splice -c 'set -o pipefail; false | true'`: returned status 1; ordinary `false | true` returned status 0.
+- `./build/splice -c 'echo $(printf inner)'`: passed with concurrent captured output and trailing-newline removal.
 - `git diff --check`: passed.
 
 ## Incomplete gates
 
-All real process, interactive, performance, scale, evidence, publication-at-current-tip, and private census gates are incomplete. Foundation syntax and planning are partial only; no feature is marked fully implemented in the registry yet.
+All interactive editor, persistent history, language-server, signal-wakeup, advanced language, performance, scale, evidence, publication-at-current-tip, and private census gates are incomplete. The foundation runtime is partial: here-document bodies, `jobs`/`wait`/`fg`/`bg`, traps, ENOEXEC interpretation, complete `set -e` contexts, and descriptor-failure injection are not yet acceptance-complete.
 
 ## Next concrete action
 
-Implement the single-owner runtime with real `fork`, `execve`, `waitpid`, pipes, process groups, ordered redirections, and parent-safe builtin execution. Wire it into `splice -c` and preserve plan inspection as a no-execute path.
+Add versioned trace events, SIGCHLD self-pipe wakeups, retained job commands, and a native termios lifecycle. Then exercise stop/resume and terminal restoration through a real PTY harness.
