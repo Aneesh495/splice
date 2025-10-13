@@ -4,6 +4,7 @@
 #include "syntax/ast.hpp"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace splice::plan {
@@ -41,7 +42,9 @@ struct ExecutionPlan {
 
 class PlanBuilder {
  public:
-  explicit PlanBuilder(expand::ShellState& state) : state_(state), expander_(state) {}
+  explicit PlanBuilder(expand::ShellState& state,
+                       expand::CommandSubstitution substitution = {})
+      : state_(state), expander_(state, std::move(substitution)) {}
 
   [[nodiscard]] ExecutionPlan build(const syntax::CommandPtr& command);
   [[nodiscard]] std::string dump_json(const ExecutionPlan& plan) const;

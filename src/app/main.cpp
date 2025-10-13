@@ -1,5 +1,10 @@
 #include "source/source.hpp"
 #include "plan/plan.hpp"
+#include "inspect/trace.hpp"
+#include "interactive/editor.hpp"
+#include "history/history.hpp"
+#include "runtime/runtime.hpp"
+#include "task/runner.hpp"
 #include "syntax/ast.hpp"
 #include "syntax/lexer.hpp"
 #include "syntax/parser.hpp"
@@ -24,6 +29,7 @@ struct Options {
   bool dump_tokens{false};
   bool dump_ast{false};
   bool dump_plan{false};
+  std::string trace_path;
   std::string command;
   std::string script;
   std::string profile{"posix"};
@@ -38,6 +44,8 @@ void print_help(std::ostream& out) {
       << "  --dump-tokens          print quote-preserving tokens as JSON\n"
       << "  --dump-ast             print the typed AST as JSON\n"
       << "  --dump-plan            print the expanded descriptor plan as JSON\n"
+      << "  --trace FILE           write versioned runtime events as JSONL\n"
+      << "  run --manifest FILE    execute a bounded task manifest\n"
       << "  --profile=PROFILE      posix, bash, or splice\n"
       << "  --version              print the version\n"
       << "  -h, --help             print this help\n";
@@ -64,6 +72,12 @@ bool parse_options(int argc, char** argv, Options& options, std::ostream& errors
     } else if (argument == "--dump-plan" || argument == "--dump-plan=json") {
       options.no_execute = true;
       options.dump_plan = true;
+    } else if (argument == "--trace") {
+      if (index + 1 >= argc) {
+        errors << "splice: --trace requires a file\n";
+        return false;
+      }
+      options.trace_path = argv[++index];
     } else if (argument == "--version") {
       std::cout << kVersion << '\n';
       std::exit(EXIT_SUCCESS);
@@ -129,15 +143,100 @@ void print_diagnostics(const source::SourceBuffer& source,
   }
 }
 
+int run_task_cli(int argc, char** argv) {
+  std::size_t max_parallel = 1;
+  std::string manifest;
+  for (int index = 2; index < argc; ++index) {
+    const std::string_view argument(argv[index]);
+    if (argument == "--max-parallel" && index + 1 < argc) {
+      try { max_parallel = std::stoul(argv[++index]); }
+      catch (...) { std::cerr << "splice run: invalid parallelism\n"; return 2; }
+    } else if (argument == "--manifest" && index + 1 < argc) {
+      manifest = argv[++index];
+    } else {
+      std::cerr << "splice run: expected --max-parallel N --manifest FILE\n";
+      return 2;
+    }
+  }
+  if (manifest.empty()) {
+    std::cerr << "splice run: manifest is required\n";
+    return 2;
+  }
+  task::Runner runner(max_parallel);
+  std::string error;
+  if (!runner.load(manifest, error)) {
+    std::cerr << "splice run: " << error << '\n';
+    return 2;
+  }
+  const auto outcomes = runner.run(error);
+  if (!error.empty()) {
+    std::cerr << "splice run: " << error << '\n';
+    return 125;
+  }
+  std::cout << runner.dump_json(outcomes) << '\n';
+  for (const auto& outcome : outcomes) if (outcome.status != 0) return 1;
+  return 0;
+}
+
+int run_interactive(const Options& options) {
+  expand::ShellState state;
+  expand::Profile profile;
+  if (!expand::parse_profile(options.profile, profile)) return 2;
+  state.set_profile(profile);
+  state.set("0", "splice");
+  const char* configured_history = std::getenv("SPLICE_HISTORY");
+  const char* home = std::getenv("HOME");
+  const std::string history_path = configured_history != nullptr ? configured_history :
+      (home != nullptr ? std::string(home) + "/.splice/history" : ".splice-history");
+  history::Store history_store(history_path);
+  (void)history_store.open();
+  inspect::Trace trace(options.trace_path);
+  if (!options.trace_path.empty() && !trace.open()) {
+    std::cerr << "splice: cannot open trace " << options.trace_path << '\n';
+    return 2;
+  }
+  runtime::Runtime runtime(state, options.trace_path.empty() ? nullptr : &trace);
+  interactive::LineEditor editor(STDIN_FILENO, STDOUT_FILENO, history_store);
+  while (true) {
+    std::string line;
+    const std::string prompt = "splice[" + std::to_string(state.last_status) + "]$ ";
+    if (!editor.read_line(prompt, line)) break;
+    if (line.empty()) continue;
+    std::string program_text = line;
+    syntax::ParseResult parsed;
+    source::SourceBuffer source;
+    syntax::LexResult lexed;
+    while (true) {
+      source = source::SourceBuffer(program_text, "<interactive>");
+      syntax::Lexer lexer(source);
+      lexed = lexer.run();
+      syntax::Parser parser(source, lexed.tokens);
+      parsed = parser.run();
+      if (!parsed.incomplete && !lexed.incomplete) break;
+      std::string continuation;
+      if (!editor.read_line("> ", continuation)) return 0;
+      program_text += '\n';
+      program_text += continuation;
+    }
+    editor.prepare_execute();
+    print_diagnostics(source, lexed.diagnostics, std::cerr);
+    print_diagnostics(source, parsed.diagnostics, std::cerr);
+    int status = 2;
+    if (!lexed.diagnostics.has_error() && !parsed.diagnostics.has_error()) status = runtime.execute(parsed.program);
+    (void)history_store.append(history::Entry{program_text, 0, status, state.current_directory});
+    if (runtime.exit_requested()) break;
+    editor.resume_input();
+  }
+  return state.last_status;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc > 1 && std::string_view(argv[1]) == "run") return run_task_cli(argc, argv);
   Options options;
   if (!parse_options(argc, argv, options, std::cerr)) return 2;
-  if (argc == 1 && isatty(STDIN_FILENO) != 0) {
-    std::cout << "Splice " << kVersion << " interactive runtime is being assembled\n";
-    return EXIT_SUCCESS;
-  }
+  if (argc == 1 && isatty(STDIN_FILENO) != 0) return run_interactive(options);
 
   std::string text;
   std::string name;
@@ -177,6 +276,16 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
   if (options.no_execute) return EXIT_SUCCESS;
-  std::cerr << "splice: parsed input successfully; process runtime is the next implementation boundary\n";
-  return 0;
+  expand::ShellState state;
+  expand::Profile profile;
+  if (!expand::parse_profile(options.profile, profile)) return 2;
+  state.set_profile(profile);
+  state.set("0", options.script.empty() ? "splice" : options.script);
+  inspect::Trace trace(options.trace_path);
+  if (!options.trace_path.empty() && !trace.open()) {
+    std::cerr << "splice: cannot open trace " << options.trace_path << '\n';
+    return 2;
+  }
+  runtime::Runtime runtime(state, options.trace_path.empty() ? nullptr : &trace);
+  return runtime.execute(parsed.program);
 }

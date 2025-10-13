@@ -29,6 +29,10 @@ add_executable(splice
   src/plan/plan.cpp
   src/builtins/builtins.cpp
   src/runtime/runtime.cpp
+  src/history/history.cpp
+  src/inspect/trace.cpp
+  src/interactive/editor.cpp
+  src/task/runner.cpp
 )
 target_link_libraries(splice PRIVATE splice_options)
 target_include_directories(splice PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -45,7 +49,24 @@ if(BUILD_TESTING)
       COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_cases.py $<TARGET_FILE:splice>)
     add_test(NAME splice_runtime_fault_cases
       COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_fault_cases.py $<TARGET_FILE:splice>)
+    add_test(NAME splice_pty_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/pty_cases.py $<TARGET_FILE:splice>)
+    add_test(NAME splice_lsp_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/lsp_cases.py $<TARGET_FILE:splice-lsp>)
+    add_test(NAME splice_task_cases
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_cases.py $<TARGET_FILE:splice>)
   endif()
 endif()
 
 install(TARGETS splice RUNTIME DESTINATION bin)
+
+add_executable(splice-lsp
+  src/language_tools/lsp_main.cpp
+  src/syntax/ast.cpp
+  src/syntax/lexer.cpp
+  src/syntax/parser.cpp
+  src/syntax/token.cpp
+)
+target_link_libraries(splice-lsp PRIVATE splice_options)
+target_include_directories(splice-lsp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+install(TARGETS splice-lsp RUNTIME DESTINATION bin)

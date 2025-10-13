@@ -20,23 +20,28 @@ Last updated: 2026-10-02
 - Expansion state and planner contracts for parameters, assignments, field/pathname expansion, and ordered descriptor operations.
 - Native builtins with parent/child execution distinction, parent descriptor save/restore, and stateful `cd`, assignments, export, options, read, printf, and exit paths.
 - Single-owner runtime with real `pipe`, `fork`, process-group setup, `dup2`, `execve`, close-on-exec launch error channel, foreground `waitpid`, background job retention, and pipefail aggregation.
-- Initial documentation, feature registry, focused syntax/runtime/fault cases, and editable Mermaid diagrams.
+- SIGCHLD/SIGWINCH self-pipe bridge with async-signal-safe handlers, retained `jobs`/`wait`/`fg`/`bg`/`disown` operations, and trace event emission.
+- Native termios editor with bounded escape decoding, editing/history navigation, bracketed paste negotiation, redraw, EOF, and a dumb-terminal fallback.
+- Persistent escaped history store with bounded retention and malformed-tail recovery.
+- Independent `splice-lsp` JSON-RPC syntax-check process.
+- Bounded native `splice run --max-parallel N --manifest FILE` runner with JSON validation, concurrent child capture, timeout, output caps, and per-task outcomes.
+- Initial documentation, feature registry, focused syntax/runtime/fault/PTY/LSP/task cases, and editable Mermaid diagrams.
 
 ## Commands and outcomes
 
 - `git init -b main`: passed.
 - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug`: passed on macOS arm64 with AppleClang 21.0.0.21000334.
-- `cmake --build build`: passed after adding the native builtin and runtime modules with no compiler warnings.
-- `ctest --test-dir build --output-on-failure`: passed, 5/5 tests, including 6 syntax cases, 14 real-process cases, and 3 launch-failure cases.
-- `./build/splice -c 'printf "%s\\n" hello | tr a-z A-Z'`: passed through Splice-owned pipe/fork/exec and produced `HELLO`.
-- `./build/splice -c 'set -o pipefail; false | true'`: returned status 1; ordinary `false | true` returned status 0.
-- `./build/splice -c 'echo $(printf inner)'`: passed with concurrent captured output and trailing-newline removal.
+- `cmake --build build`: passed for `splice` and independent `splice-lsp` with no compiler warnings.
+- `ctest --test-dir build --output-on-failure`: passed, 8/8 tests, including 6 syntax cases, 14 real-process cases, 3 launch-failure cases, a real PTY/history lifecycle, an LSP protocol sequence, and 3 bounded task children.
+- `./build/splice --trace FILE -c 'echo traced | tr a-z A-Z'`: passed and emitted four version-1 JSONL events with monotonic sequence IDs.
+- `./build/splice -c 'sleep 0.02 & jobs; wait'`: passed with a retained running job record and collected status.
+- `./build/splice run --max-parallel 2 --manifest tasks.json`: passed the bounded runner case with per-task output and 127 lookup status.
 - `git diff --check`: passed.
 
 ## Incomplete gates
 
-All interactive editor, persistent history, language-server, signal-wakeup, advanced language, performance, scale, evidence, publication-at-current-tip, and private census gates are incomplete. The foundation runtime is partial: here-document bodies, `jobs`/`wait`/`fg`/`bg`, traps, ENOEXEC interpretation, complete `set -e` contexts, and descriptor-failure injection are not yet acceptance-complete.
+The editor/history/trace/LSP/task-runner core paths now have focused checks, but the full interactive and language-product requirements remain incomplete: vi mode, wide-character display policy, completion schemas, hover/symbol/navigation, concurrent cross-process history locking, full trap and stop/resume semantics, and offline trace report are pending. Advanced language, differential, large-scale process, performance, evidence, publication-at-current-tip, and private census gates are incomplete.
 
 ## Next concrete action
 
-Add versioned trace events, SIGCHLD self-pipe wakeups, retained job commands, and a native termios lifecycle. Then exercise stop/resume and terminal restoration through a real PTY harness.
+Add the evidence harness and executable gate registry, then expand semantic cases and real PTY/fault/stress campaigns. Keep all measured targets and missing-platform claims explicit rather than treating the fast suite as acceptance.

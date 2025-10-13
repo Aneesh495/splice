@@ -15,6 +15,7 @@ struct Context {
   int error_fd{2};
   bool parent{false};
   std::function<int(const std::vector<std::string>&)> nested;
+  std::function<int(const std::vector<std::string>&)> job_control;
 };
 
 struct Result {

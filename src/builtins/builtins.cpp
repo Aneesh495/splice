@@ -298,9 +298,13 @@ Result run(const std::vector<std::string>& argv, Context& context) {
       int pid = 0;
       if (!number(argv[first], pid) || ::kill(static_cast<pid_t>(pid), signal_number) != 0) result.status = 1;
     }
-  } else if (name == "jobs" || name == "wait" || name == "bg") {
-    error(context, std::string(name) + ": job control is provided by the runtime");
-    result.status = 1;
+  } else if (name == "jobs" || name == "wait" || name == "bg" || name == "fg" || name == "disown") {
+    if (context.job_control) {
+      result.status = context.job_control(argv);
+    } else {
+      error(context, std::string(name) + ": job control is provided by the runtime");
+      result.status = 1;
+    }
   } else if (name == "exec") {
     error(context, "exec: replacing the shell is not available in this execution context");
     result.status = 125;

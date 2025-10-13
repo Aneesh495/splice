@@ -3,8 +3,10 @@
 #include "builtins/builtins.hpp"
 #include "plan/plan.hpp"
 #include "source/source.hpp"
+#include "inspect/trace.hpp"
 
 #include <map>
+#include <signal.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>
@@ -37,7 +39,7 @@ struct Job {
 
 class Runtime {
  public:
-  explicit Runtime(expand::ShellState& state);
+  explicit Runtime(expand::ShellState& state, inspect::Trace* trace = nullptr);
   ~Runtime();
 
   [[nodiscard]] int execute(const syntax::Program& program);
@@ -63,11 +65,16 @@ class Runtime {
   [[nodiscard]] std::vector<std::string> environment_for(const plan::PlannedCommand& command) const;
   [[nodiscard]] std::string resolve_executable(const std::string& name) const;
   [[nodiscard]] int wait_foreground(Job& job);
+  [[nodiscard]] int job_control(const std::vector<std::string>& argv);
   [[nodiscard]] int decode_status(int status) const noexcept;
   [[nodiscard]] Job* find_job_for_pid(pid_t pid);
   void register_job(Job job);
   void reap_one(pid_t pid, int status);
   void report_error(std::string_view message) const;
+  void install_signal_bridge();
+  void restore_signal_bridge();
+  void drain_signal_bridge();
+  static void signal_handler(int signal_number) noexcept;
 
   expand::ShellState& state_;
   expand::Expander expander_;
@@ -78,6 +85,13 @@ class Runtime {
   bool interactive_{false};
   bool exit_requested_{false};
   int shell_terminal_{0};
+  int signal_read_{-1};
+  int signal_write_{-1};
+  bool signal_bridge_installed_{false};
+  struct sigaction old_sigchld_{};
+  struct sigaction old_sigwinch_{};
+  inspect::Trace* trace_{nullptr};
+  static int signal_write_fd_;
 };
 
 }  // namespace splice::runtime
