@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "evidence_root": "acceptance/evidence",
+  "gates": [
+    {
+      "id": "fresh-build",
+      "description": "Debug native build and CTest",
+      "command": "make test",
+      "required_artifact": "acceptance/evidence/ctest.json",
+      "minimum_progress": 8
+    },
+    {
+      "id": "foundation-fast",
+      "description": "Focused syntax/runtime semantic cases",
+      "command": "make test",
+      "required_artifact": "acceptance/evidence/ctest.json",
+      "minimum_progress": 8
+    },
+    {
+      "id": "pty-fast",
+      "description": "Real controlling-terminal lifecycle",
+      "command": "make test-pty",
+      "required_artifact": "acceptance/evidence/pty.json",
+      "minimum_progress": 1
+    },
+    {
+      "id": "differential-fast",
+      "description": "Frozen safe differential corpus",
+      "command": "make test-differential",
+      "required_artifact": "acceptance/evidence/differential.json",
+      "minimum_progress": 100
+    },
+    {
+      "id": "stress-fast",
+      "description": "Native completed external child cycles",
+      "command": "make test-stress",
+      "required_artifact": "acceptance/evidence/stress.json",
+      "minimum_progress": 1000
+    },
+    {
+      "id": "fuzz-fast",
+      "description": "Bounded syntax-only generated executions",
+      "command": "make fuzz",
+      "required_artifact": "acceptance/evidence/fuzz.json",
+      "minimum_progress": 1000
+    },
+    {
+      "id": "benchmark",
+      "description": "Raw protocol benchmark repetitions",
+      "command": "make benchmark",
+      "required_artifact": "acceptance/evidence/benchmark.json",
+      "minimum_progress": 10
+    },
+    {
+      "id": "private-census",
+      "description": "Ignored substantive production census",
+      "command": "tools/census.py",
+      "required_artifact": ".agent-local/census.json",
+      "minimum_progress": 10000
+    },
+    {
+      "id": "heavy-concurrency",
+      "description": "500 live groups in 30 repetitions on primary profile",
+      "command": "tools/concurrency.py",
+      "required_artifact": ".agent-local/concurrency.json",
+      "minimum_progress": 15000
+    },
+    {
+      "id": "heavy-stress",
+      "description": "180000 real completed child cycles",
+      "command": "tools/stress.py --cycles 180000",
+      "required_artifact": ".agent-local/stress-heavy.json",
+      "minimum_progress": 180000
+    }
+  ]
+}

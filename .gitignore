@@ -19,3 +19,10 @@
 *.sqlite3
 *.db
 .env
+
+# Generated campaign evidence and local counters
+/acceptance/evidence/
+/acceptance/*.tmp
+/fuzz/corpus/
+*.pyc
+__pycache__/

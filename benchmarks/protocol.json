@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "name": "splice-dispatch-and-reaping",
+  "reference_profile": "macOS arm64 local development profile; Linux x86-64 is the primary heavy profile",
+  "shells": {
+    "splice": {"command": "./build/splice", "mode": "-c"},
+    "bash": {"command": "bash", "args": ["--noprofile", "--norc", "-c"]},
+    "dash": {"command": "dash", "args": ["-c"]}
+  },
+  "corpus": [
+    {"id":"external-noop","script":"/usr/bin/true"},
+    {"id":"builtin-state","script":"x=one; x=two"},
+    {"id":"five-stage-pipeline","script":"/usr/bin/printf x | /usr/bin/tr x x | /usr/bin/tr x x | /usr/bin/tr x x | /usr/bin/tr x x"},
+    {"id":"repeated-expansion","script":"x=value; /usr/bin/printf '%s' \"$x$x$x\""},
+    {"id":"large-here-document","script":"/usr/bin/printf body"},
+    {"id":"background-groups","script":"/bin/sleep 0.001 & /bin/sleep 0.001"}
+  ],
+  "repetitions": 10,
+  "warmup": 2,
+  "clock": "time.monotonic_ns",
+  "external_dispatch_endpoint": "subprocess start through first stdout marker PROBE",
+  "reaping_proxy": "child completion observed by waitpid; final-write timestamp is not zombie creation time",
+  "targets": {
+    "dispatch_reduction_percent": 60.0,
+    "loaded_dispatch_p95_ms": 5.0,
+    "reaping_reduction_percent": 45.0
+  },
+  "statistics": ["median", "p95", "p99", "mean", "sample_count"],
+  "controls": ["locale=C", "identical command corpus", "raw samples retained", "late markers are failures", "instrumentation overhead reported"]
+}

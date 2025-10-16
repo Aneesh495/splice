@@ -25,7 +25,8 @@ Last updated: 2026-10-02
 - Persistent escaped history store with bounded retention and malformed-tail recovery.
 - Independent `splice-lsp` JSON-RPC syntax-check process.
 - Bounded native `splice run --max-parallel N --manifest FILE` runner with JSON validation, concurrent child capture, timeout, output caps, and per-task outcomes.
-- Initial documentation, feature registry, focused syntax/runtime/fault/PTY/LSP/task cases, and editable Mermaid diagrams.
+- Reproducible Make entry points, frozen benchmark protocol, differential/fuzz/stress/benchmark drivers, private census, acceptance registry, artifact hashing, and read-only verification scripts.
+- Initial documentation, feature registry, focused syntax/runtime/fault/PTY/LSP/task cases, examples, and editable Mermaid diagrams.
 
 ## Commands and outcomes
 
@@ -33,15 +34,18 @@ Last updated: 2026-10-02
 - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug`: passed on macOS arm64 with AppleClang 21.0.0.21000334.
 - `cmake --build build`: passed for `splice` and independent `splice-lsp` with no compiler warnings.
 - `ctest --test-dir build --output-on-failure`: passed, 8/8 tests, including 6 syntax cases, 14 real-process cases, 3 launch-failure cases, a real PTY/history lifecycle, an LSP protocol sequence, and 3 bounded task children.
-- `./build/splice --trace FILE -c 'echo traced | tr a-z A-Z'`: passed and emitted four version-1 JSONL events with monotonic sequence IDs.
-- `./build/splice -c 'sleep 0.02 & jobs; wait'`: passed with a retained running job record and collected status.
-- `./build/splice run --max-parallel 2 --manifest tasks.json`: passed the bounded runner case with per-task output and 127 lookup status.
+- `make bootstrap`: passed; CMake 4.0.3, Ninja 1.13.2, Python 3.14.2, and Git 2.54.0 were found without modifying user configuration.
+- `tools/differential.py --count 20`: passed with 20/20 matches against dash POSIX mode and Bash POSIX mode on the frozen safe corpus.
+- `tools/stress.py --cycles 1000`: passed with 1000 completed real external child cycles.
+- `tools/fuzz.py --cases 1000`: passed with 500 valid and 500 malformed syntax-only cases executed.
+- `tools/benchmark.py --repetitions 10`: computed median dispatch reduction of approximately 24% against Bash and Splice p95 above 5 ms; the 60% and loaded p95 targets are not met.
+- `tools/concurrency.py --groups 20`: observed 21 live groups in the bounded smoke workload; the 500 x 30 heavy gate was not run.
 - `git diff --check`: passed.
 
 ## Incomplete gates
 
-The editor/history/trace/LSP/task-runner core paths now have focused checks, but the full interactive and language-product requirements remain incomplete: vi mode, wide-character display policy, completion schemas, hover/symbol/navigation, concurrent cross-process history locking, full trap and stop/resume semantics, and offline trace report are pending. Advanced language, differential, large-scale process, performance, evidence, publication-at-current-tip, and private census gates are incomplete.
+The evidence harness and registry now exist, but the bounded campaign is not the hard acceptance campaign. The required 1,200 authored semantic cases, 20,000 valid differential programs, 10,000 malformed/incomplete programs, 300 PTY sessions, 500 groups in 30 repetitions, 180,000 completed child cycles, 2,000,000 sanitizer executions, Linux x86-64 profile, 10,000 substantive production lines, and hosted-tip verification remain incomplete. Current measured dispatch targets are explicitly missed: approximately 24% median reduction and p95 above 5 ms.
 
 ## Next concrete action
 
-Add the evidence harness and executable gate registry, then expand semantic cases and real PTY/fault/stress campaigns. Keep all measured targets and missing-platform claims explicit rather than treating the fast suite as acceptance.
+Run `make acceptance` to create the bounded evidence record, inspect and repair any verifier/tooling defects, then perform a skeptical source review before deciding which heavy campaigns can run on this macOS arm64 profile. Do not mark unavailable gates as passed.

@@ -1,0 +1,6 @@
+{
+  "tasks": [
+    {"id":"alpha","argv":["printf","alpha\\n"],"output":"capture"},
+    {"id":"beta","argv":["printf","beta\\n"],"output":"capture"}
+  ]
+}
