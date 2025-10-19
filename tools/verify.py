@@ -7,11 +7,46 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int | None:
+    evidence = root / "acceptance" / "evidence"
+    if gate_id in {"fresh-build", "foundation-fast"}:
+        path = evidence / "ctest.json"
+        if not path.exists(): return None
+        text = json.loads(path.read_text()).get("stdout", "")
+        return len(re.findall(r"\\d+/\\d+ Test", text))
+    if gate_id == "pty-fast":
+        path = evidence / "pty.json"
+        if not path.exists(): return None
+        text = json.loads(path.read_text()).get("stdout", "")
+        return len(re.findall(r"\\d+/\\d+ Test", text))
+    source_map = {"differential-fast": "differential.json", "stress-fast": "stress.json", "fuzz-fast": "fuzz.json",
+                  "benchmark": "benchmark.json", "private-census": "census.json"}
+    if gate_id in source_map:
+        path = evidence / source_map[gate_id]
+        if not path.exists(): return None
+        data = json.loads(path.read_text())
+        keys = {"differential-fast": "executed", "stress-fast": "completed_cycles", "fuzz-fast": "executed",
+                "benchmark": "repetitions", "private-census": "substantive_production_lines"}
+        value = data.get(keys[gate_id], 0)
+        return int(value or 0)
+    if gate_id == "heavy-concurrency":
+        path = root / ".agent-local" / "concurrency.json"
+        if not path.exists(): return None
+        data = json.loads(path.read_text())
+        return int(data.get("minimum_peak", 0)) * int(data.get("repetitions", 0))
+    if gate_id == "heavy-stress":
+        path = root / ".agent-local" / "stress-heavy.json"
+        if not path.exists(): return None
+        return int(json.loads(path.read_text()).get("completed_cycles", 0) or 0)
+    return None
 
 
 def main() -> int:
@@ -30,16 +65,19 @@ def main() -> int:
     registry = json.loads(registry_path.read_text()) if registry_path.exists() else {"gates": []}
     failures = []
     current_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
+    parent_commit = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
     source_commit = acceptance.get("source_commit", acceptance.get("commit"))
-    ancestor_check = subprocess.run(["git", "merge-base", "--is-ancestor", source_commit, current_commit], cwd=ROOT, check=False)
-    if ancestor_check.returncode != 0:
-        failures.append("acceptance source commit is not an ancestor of HEAD")
+    if source_commit not in {current_commit, parent_commit}:
+        failures.append("acceptance source commit is neither HEAD nor the immediate evidence parent")
     for relative, expected in manifest.get("files", {}).items():
         path = ROOT / relative
         if not path.exists():
             failures.append(f"missing artifact: {relative}")
         elif hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             failures.append(f"altered artifact: {relative}")
+    expected_acceptance_hash = manifest.get("acceptance_sha256")
+    if expected_acceptance_hash and hashlib.sha256(acceptance_path.read_bytes()).hexdigest() != expected_acceptance_hash:
+        failures.append("altered acceptance record")
     derived = {gate.get("id"): gate for gate in acceptance.get("derived_gates", [])}
     for required_gate in registry.get("gates", []):
         artifact = required_gate.get("required_artifact")
@@ -48,6 +86,16 @@ def main() -> int:
         gate = derived.get(required_gate.get("id"))
         if gate is None:
             failures.append(f"missing derived gate: {required_gate.get('id')}")
+            continue
+        actual = measured_actual(required_gate.get("id"), ROOT, acceptance)
+        if actual is None:
+            failures.append(f"missing measurable evidence for {required_gate.get('id')}")
+            continue
+        expected_verified = gate.get("command_status") == 0 and actual >= int(required_gate.get("minimum_progress", 0))
+        if gate.get("actual") != actual:
+            failures.append(f"gate actual is not derived for {required_gate.get('id')}: recorded={gate.get('actual')} measured={actual}")
+        if gate.get("verified") != expected_verified:
+            failures.append(f"gate verdict is not derived for {required_gate.get('id')}")
     for step in acceptance.get("steps", []):
         if step.get("status") != 0:
             failures.append(f"failed evidence step: {step.get('name')}")

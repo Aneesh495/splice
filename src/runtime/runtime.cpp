@@ -124,7 +124,7 @@ void Runtime::drain_signal_bridge() {
 Runtime::~Runtime() {
   restore_signal_bridge();
   for (auto& [id, job] : jobs_) {
-    if (job.state == JobState::Running) {
+    if (job.state != JobState::Completed) {
       if (job.process_group > 0) ::kill(-job.process_group, SIGHUP);
       for (const auto process : job.processes) {
         int status = 0;
@@ -181,29 +181,37 @@ int Runtime::apply_descriptor_actions(const plan::PlannedCommand& command) {
       if (state_.option(expand::ShellOption::Noclobber) && action.kind == plan::DescriptorActionKind::Open) flags |= O_EXCL;
       const int fd = ::open(action.path.c_str(), flags, 0666);
       if (fd < 0) return -kErrorOpen;
-      if (dup2(fd, action.fd) < 0) {
+      if (fd != action.fd && dup2(fd, action.fd) < 0) {
         const int saved = errno;
         close_if_open(fd);
         errno = saved;
         return -kErrorDup;
       }
-      close_if_open(fd);
+      if (fd != action.fd) close_if_open(fd);
     } else if (action.kind == plan::DescriptorActionKind::Duplicate) {
       if (dup2(action.target_fd, action.fd) < 0) return -kErrorDup;
     } else if (action.kind == plan::DescriptorActionKind::Close) {
       if (close(action.fd) < 0 && errno != EBADF) return -kErrorDup;
     } else if (action.kind == plan::DescriptorActionKind::HereDocument) {
-      int pipe_fds[2];
-      if (pipe(pipe_fds) != 0) return -kErrorOpen;
-      const std::string& body = action.body;
-      const ssize_t ignored = write(pipe_fds[1], body.data(), body.size());
-      (void)ignored;
-      close(pipe_fds[1]);
-      if (dup2(pipe_fds[0], action.fd) < 0) {
-        close(pipe_fds[0]);
+      char temporary[] = "/tmp/splice-heredoc-XXXXXX";
+      const int body_fd = mkstemp(temporary);
+      if (body_fd < 0) return -kErrorOpen;
+      unlink(temporary);
+      std::size_t offset = 0;
+      while (offset < action.body.size()) {
+        const ssize_t written = write(body_fd, action.body.data() + offset, action.body.size() - offset);
+        if (written < 0 && errno == EINTR) continue;
+        if (written <= 0) {
+          close(body_fd);
+          return -kErrorOpen;
+        }
+        offset += static_cast<std::size_t>(written);
+      }
+      if (lseek(body_fd, 0, SEEK_SET) < 0 || dup2(body_fd, action.fd) < 0) {
+        close(body_fd);
         return -kErrorDup;
       }
-      close(pipe_fds[0]);
+      close(body_fd);
     }
   }
   return 0;
@@ -222,6 +230,8 @@ void Runtime::restore_parent_descriptors(const std::vector<int>& saved) {
     if (saved[static_cast<std::size_t>(fd)] >= 0) {
       dup2(saved[static_cast<std::size_t>(fd)], fd);
       close(saved[static_cast<std::size_t>(fd)]);
+    } else {
+      close(fd);
     }
   }
 }
@@ -242,8 +252,8 @@ int Runtime::child_setup_and_exec(const plan::PlannedCommand& command,
     _exit(125);
   }
   close_if_open(input_fd == STDIN_FILENO ? -1 : input_fd);
-  close_if_open(output_fd == STDOUT_FILENO ? -1 : output_fd);
-  close_if_open(error_fd == STDERR_FILENO ? -1 : error_fd);
+  if (output_fd != input_fd) close_if_open(output_fd == STDOUT_FILENO ? -1 : output_fd);
+  if (error_fd != input_fd && error_fd != output_fd) close_if_open(error_fd == STDERR_FILENO ? -1 : error_fd);
   if (apply_descriptor_actions(command) != 0) {
     write_child_error(error_pipe, kErrorOpen, errno);
     _exit(125);
@@ -282,6 +292,14 @@ int Runtime::execute_parent_builtin(const plan::PlannedCommand& command) {
     return 1;
   }
   for (const auto& [name, value] : command.assignments) {
+    (void)value;
+    if (state_.is_readonly(name)) {
+      restore_parent_descriptors(saved);
+      report_error("assignment failed for readonly variable");
+      return 1;
+    }
+  }
+  for (const auto& [name, value] : command.assignments) {
     if (!state_.set(name, value)) {
       restore_parent_descriptors(saved);
       report_error("assignment failed for readonly variable");
@@ -290,10 +308,12 @@ int Runtime::execute_parent_builtin(const plan::PlannedCommand& command) {
   }
   builtins::Context context{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, true,
                             [this](const std::vector<std::string>& argv) {
+                              plan::ExecutionPlan nested_plan;
                               plan::PlannedCommand nested;
                               nested.argv = argv;
-                              builtins::Context nested_context{state_, 0, 1, 2, true, {}, {}};
-                              return builtins::run(argv, nested_context).status;
+                              nested.environment = state_.environment();
+                              nested_plan.stages.push_back(std::move(nested));
+                              return execute_plan(nested_plan);
                             },
                             [this](const std::vector<std::string>& argv) {
                               return job_control(argv);
@@ -403,15 +423,36 @@ Job* Runtime::find_job_for_pid(pid_t pid) {
 void Runtime::reap_one(pid_t pid, int status) {
   Job* job = find_job_for_pid(pid);
   if (job == nullptr) return;
-  job->results.push_back(ProcessResult{ProcessId{pid}, decode_status(status), WIFEXITED(status), WIFSIGNALED(status)});
-  if (trace_ != nullptr) (void)trace_->record("child-status", {{"pid", std::to_string(pid)}, {"status", std::to_string(decode_status(status))}});
-  bool all_done = job->results.size() == job->processes.size();
-  if (WIFSTOPPED(status)) job->state = JobState::Stopped;
-  else if (all_done) {
+  const auto process = std::find_if(job->processes.begin(), job->processes.end(),
+                                    [pid](ProcessId value) { return value.value == pid; });
+  const std::size_t stage = process == job->processes.end()
+      ? 0 : static_cast<std::size_t>(std::distance(job->processes.begin(), process));
+  if (WIFSTOPPED(status)) {
+    job->state = JobState::Stopped;
+    job->status = 128 + WSTOPSIG(status);
+    if (trace_ != nullptr) (void)trace_->record("child-stopped", {{"pid", std::to_string(pid)}, {"status", std::to_string(job->status)}});
+    return;
+  }
+  if (WIFCONTINUED(status)) {
+    job->state = JobState::Running;
+    if (trace_ != nullptr) (void)trace_->record("child-continued", {{"pid", std::to_string(pid)}});
+    return;
+  }
+  if (!WIFEXITED(status) && !WIFSIGNALED(status)) return;
+  if (job->stage_statuses.size() < job->processes.size()) job->stage_statuses.assign(job->processes.size(), -1);
+  if (job->stage_statuses[stage] != -1) return;
+  const int decoded = decode_status(status);
+  job->stage_statuses[stage] = decoded;
+  job->results.push_back(ProcessResult{ProcessId{pid}, decoded, WIFEXITED(status), WIFSIGNALED(status)});
+  if (trace_ != nullptr) (void)trace_->record("child-status", {{"pid", std::to_string(pid)}, {"stage", std::to_string(stage)}, {"status", std::to_string(decoded)}});
+  const bool all_done = std::all_of(job->stage_statuses.begin(), job->stage_statuses.end(), [](int value) { return value >= 0; });
+  if (all_done) {
     job->state = JobState::Completed;
-    job->status = job->results.back().status;
+    job->status = job->stage_statuses.back();
     if (state_.option(expand::ShellOption::Pipefail)) {
-      for (const auto& result : job->results) if (result.status != 0) job->status = result.status;
+      for (auto iterator = job->stage_statuses.rbegin(); iterator != job->stage_statuses.rend(); ++iterator) {
+        if (*iterator != 0) { job->status = *iterator; break; }
+      }
     }
   }
 }
@@ -453,9 +494,14 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
   std::vector<std::array<int, 2>> pipes;
   if (plan.stages.size() > 1) {
     pipes.resize(plan.stages.size() - 1);
+    for (auto& pair : pipes) pair = {-1, -1};
     for (auto& pair : pipes) {
       if (pipe(pair.data()) != 0) {
         report_error(std::string("pipe: ") + std::strerror(errno));
+        for (auto& created : pipes) {
+          close_if_open(created[0]);
+          close_if_open(created[1]);
+        }
         unblock_signals();
         return 125;
       }
@@ -476,6 +522,7 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
   Job job;
   job.id = next_job_id_++;
   job.background = plan.background;
+  job.stage_statuses.assign(plan.stages.size(), -1);
   pid_t group = -1;
   for (std::size_t index = 0; index < plan.stages.size(); ++index) {
     const int input = index == 0 ? STDIN_FILENO : pipes[index - 1][0];
@@ -493,12 +540,21 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
         if (static_cast<int>(close_index) != static_cast<int>(index) - 1) close_if_open(pipes[close_index][0]);
         if (static_cast<int>(close_index) != static_cast<int>(index)) close_if_open(pipes[close_index][1]);
       }
-      (void)child_setup_and_exec(plan.stages[index], input, output, STDERR_FILENO, error_write);
+      const int child_error = plan.stages[index].merge_stderr ? output : STDERR_FILENO;
+      (void)child_setup_and_exec(plan.stages[index], input, output, child_error, error_write);
       _exit(125);
     }
     if (pid < 0) {
       report_error(std::string("fork: ") + std::strerror(errno));
       for (const auto process : job.processes) kill(process.value, SIGTERM);
+      for (const auto process : job.processes) {
+        int child_status = 0;
+        while (waitpid(process.value, &child_status, 0) < 0 && errno == EINTR) {}
+      }
+      for (auto& pair : pipes) {
+        close_if_open(pair[0]);
+        close_if_open(pair[1]);
+      }
       close(error_read);
       close(error_write);
       unblock_signals();
@@ -521,6 +577,7 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
   Job& stored = jobs_.at(job.id);
   if (!plan.background && interactive_ && group > 0) tcsetpgrp(shell_terminal_, group);
   if (plan.background) {
+    close(error_read);
     state_.last_background_pid = group;
     return 0;
   }
@@ -546,6 +603,26 @@ int Runtime::execute_plan(const plan::ExecutionPlan& plan) {
     return execute_parent_builtin(plan.stages.front());
   }
   return launch_pipeline(plan);
+}
+
+int Runtime::execute_subshell(const syntax::CommandPtr& command) {
+  if (command->children.empty()) return 0;
+  const pid_t pid = fork();
+  if (pid < 0) {
+    report_error(std::string("fork subshell: ") + std::strerror(errno));
+    return 125;
+  }
+  if (pid == 0) {
+    expand::ShellState child_state = state_;
+    Runtime child_runtime(child_state);
+    const int status = child_runtime.execute_command(command->children.front());
+    _exit(status);
+  }
+  int status = 0;
+  while (waitpid(pid, &status, 0) < 0) {
+    if (errno != EINTR) return 125;
+  }
+  return decode_status(status);
 }
 
 int Runtime::execute_and_or(const syntax::CommandPtr& command) {
@@ -576,6 +653,10 @@ int Runtime::execute_command(const syntax::CommandPtr& command) {
   if (command == nullptr) return 2;
   if (command->kind == syntax::CommandKind::Sequence) return execute_sequence(command);
   if (command->kind == syntax::CommandKind::AndOr) return execute_and_or(command);
+  if (command->kind == syntax::CommandKind::Group) {
+    return command->children.empty() ? 0 : execute_command(command->children.front());
+  }
+  if (command->kind == syntax::CommandKind::Subshell) return execute_subshell(command);
   const auto plan = planner_.build(command);
   int status = execute_plan(plan);
   if (plan.negated) status = status == 0 ? 1 : 0;

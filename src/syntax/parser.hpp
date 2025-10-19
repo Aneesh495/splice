@@ -35,6 +35,7 @@ class Parser {
   CommandPtr parse_command(bool stop_at_right_paren, bool stop_at_right_brace);
   CommandPtr parse_simple();
   bool parse_redirection(SimpleCommand& command);
+  bool collect_here_document(Redirection& redirection);
   void error(source::Span span, std::string message, std::string repair = {});
 
   const source::SourceBuffer& source_;

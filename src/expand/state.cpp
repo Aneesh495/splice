@@ -40,6 +40,11 @@ bool ShellState::is_exported(std::string_view name) const {
   return variable != nullptr && variable->exported;
 }
 
+bool ShellState::is_readonly(std::string_view name) const {
+  const auto* variable = find(name);
+  return variable != nullptr && variable->readonly;
+}
+
 bool ShellState::set(std::string name, std::string value, bool exported) {
   auto iterator = variables_.find(name);
   if (iterator != variables_.end() && iterator->second.readonly) return false;

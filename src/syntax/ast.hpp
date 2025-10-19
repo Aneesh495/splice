@@ -17,6 +17,8 @@ struct Redirection {
   Word target;
   source::Span span{};
   bool pipe_stderr{false};
+  std::string here_body;
+  bool here_strip_tabs{false};
 };
 
 struct SimpleCommand {

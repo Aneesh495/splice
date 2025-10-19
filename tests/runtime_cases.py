@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 
-EXECUTABLE = pathlib.Path(sys.argv[1])
+EXECUTABLE = pathlib.Path(sys.argv[1]).resolve()
 
 
 def run(command: str, *, input_data: str = "", cwd: pathlib.Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -48,6 +48,21 @@ def main() -> int:
     substitution = run('printf "result=%s\\n" "$(printf inner)"')
     require(substitution.returncode == 0 and substitution.stdout == "result=inner\n", "command substitution failed")
 
+    arithmetic = run('printf "%s\\n" "$((1+2*3))"')
+    require(arithmetic.returncode == 0 and arithmetic.stdout == "7\n", "arithmetic precedence failed")
+
+    subshell = run('(cd /tmp); pwd')
+    require(subshell.returncode == 0 and subshell.stdout.rstrip() == os.getcwd(), "subshell state leaked to parent")
+
+    heredoc = run("cat <<EOF\nhello\nEOF\n")
+    require(heredoc.returncode == 0 and heredoc.stdout == "hello\n", "here-document collection failed")
+
+    combined = run('printf err >&2 |& tr a-z A-Z')
+    require(combined.returncode == 0 and combined.stdout == "ERR" and combined.stderr == "", "|& stderr merge failed")
+
+    reap_order = run("/bin/sh -c 'sleep 0.05; exit 7' | /bin/sh -c 'exit 3'")
+    require(reap_order.returncode == 3, "pipeline status depended on reap order")
+
     background = run('sleep 0.01 & echo foreground')
     require(background.returncode == 0 and background.stdout == "foreground\n", "background launch failed")
 
@@ -74,7 +89,7 @@ def main() -> int:
     missing = run('definitely-not-a-splice-command')
     require(missing.returncode == 127 and "child launch failed" in missing.stderr, "exec failure status failed")
 
-    print("runtime cases: 14 passed")
+    print("runtime cases: 19 passed")
     return 0
 
 

@@ -87,6 +87,8 @@ def main() -> int:
     mutation = command_result("verifier-mutations", [sys.executable, "tools/acceptance_test.py"])
     acceptance["steps"].append(mutation)
     target.write_text(json.dumps(acceptance, indent=2) + "\n")
+    manifest["acceptance_sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
+    (ROOT / "acceptance" / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(json.dumps({"source_commit": source_commit, "verified": sum(gate["verified"] for gate in gates), "gates": len(gates), "campaign": "bounded-local"}))
     return 0 if all(step["status"] == 0 for step in steps) and mutation["status"] == 0 else 1
 

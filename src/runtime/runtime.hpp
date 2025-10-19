@@ -32,6 +32,7 @@ struct Job {
   pid_t process_group{-1};
   std::vector<ProcessId> processes;
   std::vector<ProcessResult> results;
+  std::vector<int> stage_statuses;
   JobState state{JobState::Running};
   bool background{false};
   int status{0};
@@ -52,6 +53,7 @@ class Runtime {
  private:
   [[nodiscard]] int execute_sequence(const syntax::CommandPtr& command);
   [[nodiscard]] int execute_and_or(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_subshell(const syntax::CommandPtr& command);
   [[nodiscard]] int execute_plan(const plan::ExecutionPlan& plan);
   [[nodiscard]] int execute_parent_builtin(const plan::PlannedCommand& command);
   [[nodiscard]] int launch_pipeline(const plan::ExecutionPlan& plan);

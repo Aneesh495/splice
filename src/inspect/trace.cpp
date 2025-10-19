@@ -1,5 +1,6 @@
 #include "inspect/trace.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <sstream>
 
@@ -11,6 +12,15 @@ Trace::~Trace() { close(); }
 bool Trace::open() {
   std::lock_guard lock(mutex_);
   if (path_.empty()) return false;
+  std::ifstream existing(path_);
+  std::string line;
+  while (std::getline(existing, line)) {
+    const std::string marker = "\"sequence\":";
+    const std::size_t position = line.find(marker);
+    if (position == std::string::npos) continue;
+    try { sequence_ = std::max(sequence_, std::stoull(line.substr(position + marker.size()))); }
+    catch (...) {}
+  }
   output_.open(path_, std::ios::app);
   return static_cast<bool>(output_);
 }

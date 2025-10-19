@@ -83,6 +83,43 @@ CommandPtr Parser::parse_simple() {
   return command;
 }
 
+bool Parser::collect_here_document(Redirection& redirection) {
+  std::string delimiter = redirection.target.spelling;
+  if (delimiter.size() >= 2 && ((delimiter.front() == '\'' && delimiter.back() == '\'') ||
+                                (delimiter.front() == '"' && delimiter.back() == '"'))) {
+    delimiter = delimiter.substr(1, delimiter.size() - 2);
+  }
+  const std::string& text = source_.text();
+  std::size_t body_start = text.find('\n', redirection.target.span.end);
+  if (body_start == std::string::npos) {
+    incomplete_ = true;
+    error(redirection.target.span, "here-document is missing its body", "add a newline and a delimiter-terminated body");
+    return false;
+  }
+  ++body_start;
+  std::size_t cursor = body_start;
+  while (cursor <= text.size()) {
+    const std::size_t line_end = text.find('\n', cursor);
+    const std::size_t end = line_end == std::string::npos ? text.size() : line_end;
+    std::string line = text.substr(cursor, end - cursor);
+    if (redirection.kind == RedirectionKind::HereDocumentStrip) {
+      while (!line.empty() && line.front() == '\t') line.erase(line.begin());
+    }
+    if (line == delimiter) {
+      redirection.here_body = text.substr(body_start, cursor - body_start);
+      redirection.here_strip_tabs = redirection.kind == RedirectionKind::HereDocumentStrip;
+      const std::size_t delimiter_end = line_end == std::string::npos ? end : line_end + 1;
+      while (index_ < tokens_.size() && tokens_[index_].span.begin < delimiter_end) ++index_;
+      return true;
+    }
+    if (line_end == std::string::npos) break;
+    cursor = line_end + 1;
+  }
+  incomplete_ = true;
+  error(redirection.target.span, "here-document delimiter was not found", "add the delimiter on a line by itself");
+  return false;
+}
+
 bool Parser::parse_redirection(SimpleCommand& command) {
   const std::size_t start = current().span.begin;
   int fd = -1;
@@ -121,8 +158,11 @@ bool Parser::parse_redirection(SimpleCommand& command) {
   redirection.kind = kind;
   redirection.target = current().word;
   redirection.span = source::Span{start, current().span.end};
-  command.redirections.push_back(std::move(redirection));
   ++index_;
+  if (kind == RedirectionKind::HereDocument || kind == RedirectionKind::HereDocumentStrip) {
+    if (!collect_here_document(redirection)) return false;
+  }
+  command.redirections.push_back(std::move(redirection));
   return true;
 }
 

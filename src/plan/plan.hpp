@@ -27,6 +27,7 @@ struct PlannedCommand {
   std::vector<std::string> environment;
   std::vector<std::pair<std::string, std::string>> assignments;
   std::vector<DescriptorAction> descriptors;
+  bool merge_stderr{false};
   bool parent_builtin_eligible{false};
 };
 

@@ -28,6 +28,7 @@ class ShellState {
   [[nodiscard]] std::string value(std::string_view name) const;
   [[nodiscard]] bool is_set(std::string_view name) const;
   [[nodiscard]] bool is_exported(std::string_view name) const;
+  [[nodiscard]] bool is_readonly(std::string_view name) const;
   bool set(std::string name, std::string value, bool exported = false);
   bool unset(std::string_view name);
   bool mark_exported(std::string_view name, bool exported = true);

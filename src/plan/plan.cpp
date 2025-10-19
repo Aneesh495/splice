@@ -84,7 +84,7 @@ bool PlanBuilder::build_redirection(const syntax::Redirection& redirection,
     case syntax::RedirectionKind::HereDocument:
     case syntax::RedirectionKind::HereDocumentStrip:
       action.kind = DescriptorActionKind::HereDocument;
-      action.body = value;
+      action.body = redirection.here_body;
       break;
   }
   plan.descriptors.push_back(std::move(action));
@@ -135,8 +135,11 @@ bool PlanBuilder::build_command(const syntax::CommandPtr& command, ExecutionPlan
       return true;
     }
     case syntax::CommandKind::Pipeline:
-      for (const auto& child : command->children) {
-        if (!build_command(child, plan)) return false;
+      for (std::size_t index = 0; index < command->children.size(); ++index) {
+        if (!build_command(command->children[index], plan)) return false;
+        if (index < command->operators.size() && command->operators[index] == "|&" && !plan.stages.empty()) {
+          plan.stages.back().merge_stderr = true;
+        }
       }
       return true;
     case syntax::CommandKind::Background:
@@ -144,11 +147,8 @@ bool PlanBuilder::build_command(const syntax::CommandPtr& command, ExecutionPlan
       return command->children.empty() ? false : build_command(command->children.front(), plan);
     case syntax::CommandKind::Subshell:
     case syntax::CommandKind::Group:
-      if (command->children.empty()) {
-        fail(plan, "compound command has no body");
-        return false;
-      }
-      return build_command(command->children.front(), plan);
+      fail(plan, "compound command requires its own execution context");
+      return false;
     default:
       fail(plan, "this command form is not yet executable in the planner");
       return false;

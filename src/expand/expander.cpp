@@ -4,6 +4,7 @@
 #include <cctype>
 #include <fnmatch.h>
 #include <glob.h>
+#include <limits>
 
 namespace splice::expand {
 namespace {
@@ -26,6 +27,78 @@ bool has_pattern(std::string_view value) {
     }
   }
   return false;
+}
+
+class ArithmeticParser {
+ public:
+  explicit ArithmeticParser(std::string_view text) : text_(text) {}
+  bool run(long long& result) {
+    result = expression();
+    skip();
+    return !error_ && index_ == text_.size();
+  }
+
+ private:
+  void skip() { while (index_ < text_.size() && std::isspace(static_cast<unsigned char>(text_[index_])) != 0) ++index_; }
+  long long expression() {
+    long long value = term();
+    while (true) {
+      skip();
+      if (index_ >= text_.size() || (text_[index_] != '+' && text_[index_] != '-')) return value;
+      const char operation = text_[index_++];
+      const long long right = term();
+      if (operation == '+') {
+        if (__builtin_add_overflow(value, right, &value)) error_ = true;
+      } else if (__builtin_sub_overflow(value, right, &value)) error_ = true;
+    }
+  }
+  long long term() {
+    long long value = factor();
+    while (true) {
+      skip();
+      if (index_ >= text_.size() || (text_[index_] != '*' && text_[index_] != '/' && text_[index_] != '%')) return value;
+      const char operation = text_[index_++];
+      const long long right = factor();
+      if ((operation == '/' || operation == '%') && right == 0) { error_ = true; return 0; }
+      if (operation == '*') {
+        if (__builtin_mul_overflow(value, right, &value)) error_ = true;
+      } else if (operation == '/') value /= right;
+      else value %= right;
+    }
+  }
+  long long factor() {
+    skip();
+    if (index_ < text_.size() && text_[index_] == '(') {
+      ++index_;
+      const long long value = expression();
+      skip();
+      if (index_ >= text_.size() || text_[index_] != ')') error_ = true;
+      else ++index_;
+      return value;
+    }
+    bool negative = false;
+    if (index_ < text_.size() && (text_[index_] == '+' || text_[index_] == '-')) {
+      negative = text_[index_++] == '-';
+      skip();
+    }
+    const std::size_t start = index_;
+    while (index_ < text_.size() && std::isdigit(static_cast<unsigned char>(text_[index_])) != 0) ++index_;
+    if (start == index_) { error_ = true; return 0; }
+    try {
+      long long value = std::stoll(std::string(text_.substr(start, index_ - start)));
+      return negative ? -value : value;
+    } catch (...) {
+      error_ = true;
+      return 0;
+    }
+  }
+  std::string_view text_;
+  std::size_t index_{0};
+  bool error_{false};
+};
+
+bool evaluate_arithmetic(std::string_view expression, long long& value) {
+  return ArithmeticParser(expression).run(value);
 }
 
 std::string join_values(const std::vector<std::string>& values, std::string_view separator) {
@@ -163,6 +236,23 @@ std::string Expander::expand_fragment(std::string_view fragment, bool quoted,
       ++index;
       continue;
     }
+    if (fragment[index + 1] == '(' && index + 2 < fragment.size() && fragment[index + 2] == '(') {
+      const std::size_t end = fragment.find("))", index + 3);
+      if (end == std::string_view::npos) {
+        error = "unterminated arithmetic expansion";
+        return {};
+      }
+      long long value_number = 0;
+      if (!evaluate_arithmetic(fragment.substr(index + 3, end - index - 3), value_number)) {
+        error = "invalid arithmetic expression";
+        return {};
+      }
+      result += std::to_string(value_number);
+      index = end + 2;
+      had_quoted = had_quoted || quoted;
+      had_unquoted = had_unquoted || !quoted;
+      continue;
+    }
     if (fragment[index + 1] == '(') {
       std::size_t cursor = index + 2;
       std::size_t depth = 1;
@@ -183,23 +273,6 @@ std::string Expander::expand_fragment(std::string_view fragment, bool quoted,
       }
       result += substitution_(body, status);
       index = cursor;
-      had_quoted = had_quoted || quoted;
-      had_unquoted = had_unquoted || !quoted;
-      continue;
-    }
-    if (fragment[index + 1] == '(' && index + 2 < fragment.size() && fragment[index + 2] == '(') {
-      const std::size_t end = fragment.find("))", index + 3);
-      if (end == std::string_view::npos) {
-        error = "unterminated arithmetic expansion";
-        return {};
-      }
-      try {
-        result += std::to_string(std::stoll(std::string(fragment.substr(index + 3, end - index - 3))));
-      } catch (...) {
-        error = "invalid arithmetic expression";
-        return {};
-      }
-      index = end + 2;
       had_quoted = had_quoted || quoted;
       had_unquoted = had_unquoted || !quoted;
       continue;

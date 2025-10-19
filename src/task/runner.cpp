@@ -3,16 +3,20 @@
 #include <cerrno>
 #include <csignal>
 #include <cctype>
+#include <cstdlib>
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <variant>
+
+extern char** environ;
 
 namespace splice::task {
 namespace {
@@ -149,6 +153,7 @@ std::string escape_json(std::string_view value) {
 struct Active {
   TaskSpec spec;
   pid_t pid{-1};
+  pid_t process_group{-1};
   int stdout_fd{-1};
   int stderr_fd{-1};
   std::string stdout_text;
@@ -156,6 +161,22 @@ struct Active {
   std::chrono::steady_clock::time_point started;
   bool timed_out{false};
 };
+
+std::string resolve_executable(std::string_view name) {
+  if (name.find('/') != std::string_view::npos) return std::string(name);
+  const char* path_value = std::getenv("PATH");
+  const std::string path = path_value == nullptr ? std::string{} : std::string(path_value);
+  std::size_t start = 0;
+  while (start <= path.size()) {
+    const std::size_t separator = path.find(':', start);
+    const std::string directory = path.substr(start, separator == std::string::npos ? std::string::npos : separator - start);
+    const std::string candidate = (directory.empty() ? "." : directory) + "/" + std::string(name);
+    if (access(candidate.c_str(), X_OK) == 0) return candidate;
+    if (separator == std::string::npos) break;
+    start = separator + 1;
+  }
+  return {};
+}
 
 void set_nonblocking(int fd) {
   const int flags = fcntl(fd, F_GETFL);
@@ -234,39 +255,65 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
   auto launch = [&](const TaskSpec& task) -> bool {
     int stdout_pipe[2]{-1, -1};
     int stderr_pipe[2]{-1, -1};
-    if (task.output == "capture" && (pipe(stdout_pipe) != 0 || pipe(stderr_pipe) != 0)) return false;
+    if (task.output == "capture") {
+      if (pipe(stdout_pipe) != 0) return false;
+      if (pipe(stderr_pipe) != 0) {
+        close(stdout_pipe[0]); close(stdout_pipe[1]);
+        return false;
+      }
+    }
     const pid_t pid = fork();
-    if (pid < 0) return false;
+    if (pid < 0) {
+      close(stdout_pipe[0]); close(stdout_pipe[1]); close(stderr_pipe[0]); close(stderr_pipe[1]);
+      return false;
+    }
     if (pid == 0) {
-      if (!task.cwd.empty()) chdir(task.cwd.c_str());
-      for (const auto& [name, value] : task.environment) setenv(name.c_str(), value.c_str(), 1);
+      setpgid(0, 0);
+      if (!task.cwd.empty() && chdir(task.cwd.c_str()) != 0) _exit(125);
+      for (const auto& [name, value] : task.environment) if (setenv(name.c_str(), value.c_str(), 1) != 0) _exit(125);
       if (task.output == "capture") {
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        dup2(stderr_pipe[1], STDERR_FILENO);
+        if (dup2(stdout_pipe[1], STDOUT_FILENO) < 0 || dup2(stderr_pipe[1], STDERR_FILENO) < 0) _exit(125);
       } else if (task.output == "discard") {
         const int null_fd = open("/dev/null", O_WRONLY);
-        dup2(null_fd, STDOUT_FILENO);
-        dup2(null_fd, STDERR_FILENO);
+        if (null_fd < 0 || dup2(null_fd, STDOUT_FILENO) < 0 || dup2(null_fd, STDERR_FILENO) < 0) _exit(125);
+        if (null_fd > STDERR_FILENO) close(null_fd);
       }
-      if (task.output == "capture") {
-        close(stdout_pipe[0]); close(stdout_pipe[1]); close(stderr_pipe[0]); close(stderr_pipe[1]);
-      }
+      close(stdout_pipe[0]); close(stdout_pipe[1]); close(stderr_pipe[0]); close(stderr_pipe[1]);
       std::vector<char*> arguments;
       for (const auto& argument : task.argv) arguments.push_back(const_cast<char*>(argument.c_str()));
       arguments.push_back(nullptr);
-      execvp(arguments[0], arguments.data());
+      const std::string executable = resolve_executable(task.argv.front());
+      if (executable.empty()) _exit(127);
+      execve(executable.c_str(), arguments.data(), environ);
       _exit(errno == EACCES ? 126 : 127);
     }
+    setpgid(pid, pid);
     if (task.output == "capture") {
       close(stdout_pipe[1]); close(stderr_pipe[1]);
       set_nonblocking(stdout_pipe[0]); set_nonblocking(stderr_pipe[0]);
     }
-    active.push_back(Active{task, pid, stdout_pipe[0], stderr_pipe[0], {}, {}, std::chrono::steady_clock::now(), false});
+    active.push_back(Active{task, pid, pid, stdout_pipe[0], stderr_pipe[0], {}, {}, std::chrono::steady_clock::now(), false});
     return true;
+  };
+  auto cleanup_active = [&]() {
+    for (auto& item : active) {
+      if (item.process_group > 0) kill(-item.process_group, SIGTERM);
+    }
+    for (auto& item : active) {
+      int status = 0;
+      while (waitpid(item.pid, &status, 0) < 0 && errno == EINTR) {}
+      drain_fd(item.stdout_fd, item.stdout_text);
+      drain_fd(item.stderr_fd, item.stderr_text);
+    }
+    active.clear();
   };
   while (next < tasks_.size() || !active.empty()) {
     while (next < tasks_.size() && active.size() < max_parallel_) {
-      if (!launch(tasks_[next])) { error = "task launch failed"; return outcomes; }
+      if (!launch(tasks_[next])) {
+        cleanup_active();
+        error = "task launch failed";
+        return outcomes;
+      }
       ++next;
     }
     std::vector<struct pollfd> descriptors;
@@ -278,8 +325,9 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
     for (auto& item : active) {
       drain_fd(item.stdout_fd, item.stdout_text);
       drain_fd(item.stderr_fd, item.stderr_text);
-      if (item.spec.timeout_ms > 0 && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - item.started).count() > item.spec.timeout_ms) {
-        kill(item.pid, SIGTERM);
+      if (item.spec.timeout_ms > 0 && !item.timed_out &&
+          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - item.started).count() > item.spec.timeout_ms) {
+        if (item.process_group > 0) kill(-item.process_group, SIGTERM);
         item.timed_out = true;
       }
     }
@@ -288,6 +336,13 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
       const pid_t waited = waitpid(active[index].pid, &status, WNOHANG);
       if (waited == 0) { ++index; continue; }
       if (waited < 0 && errno == EINTR) continue;
+      if (waited < 0) {
+        if (active[index].stdout_fd >= 0) close(active[index].stdout_fd);
+        if (active[index].stderr_fd >= 0) close(active[index].stderr_fd);
+        outcomes.push_back(TaskOutcome{active[index].spec.id, 125, active[index].timed_out, 0, std::move(active[index].stdout_text), std::move(active[index].stderr_text)});
+        active.erase(active.begin() + static_cast<std::ptrdiff_t>(index));
+        continue;
+      }
       drain_fd(active[index].stdout_fd, active[index].stdout_text);
       drain_fd(active[index].stderr_fd, active[index].stderr_text);
       const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - active[index].started).count();
