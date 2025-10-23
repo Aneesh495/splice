@@ -221,12 +221,17 @@ int Runtime::apply_parent_descriptors(const plan::PlannedCommand& command, std::
   saved.assign(3, -1);
   for (int fd = 0; fd < 3; ++fd) {
     saved[static_cast<std::size_t>(fd)] = dup(fd);
+    if (saved[static_cast<std::size_t>(fd)] < 0 && errno != EBADF) {
+      saved[static_cast<std::size_t>(fd)] = -2;
+      return -1;
+    }
   }
   return apply_descriptor_actions(command);
 }
 
 void Runtime::restore_parent_descriptors(const std::vector<int>& saved) {
   for (int fd = 0; fd < 3 && static_cast<std::size_t>(fd) < saved.size(); ++fd) {
+    if (saved[static_cast<std::size_t>(fd)] == -2) continue;
     if (saved[static_cast<std::size_t>(fd)] >= 0) {
       dup2(saved[static_cast<std::size_t>(fd)], fd);
       close(saved[static_cast<std::size_t>(fd)]);
@@ -367,6 +372,7 @@ int Runtime::job_control(const std::vector<std::string>& argv) {
     return 0;
   }
   auto wait_job = [&](Job& job) {
+    if (job.state == JobState::Stopped) return job.status;
     while (job.results.size() < job.processes.size()) {
       int status = 0;
       const pid_t pid = waitpid(-1, &status, 0);
@@ -513,6 +519,10 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
   int error_write = -1;
   int error_pipe[2];
   if (pipe(error_pipe) != 0) {
+    for (auto& pair : pipes) {
+      close_if_open(pair[0]);
+      close_if_open(pair[1]);
+    }
     unblock_signals();
     return 125;
   }

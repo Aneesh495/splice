@@ -43,6 +43,7 @@ class Parser {
   std::size_t index_{0};
   source::Diagnostics diagnostics_;
   bool incomplete_{false};
+  std::size_t pending_here_end_{0};
 };
 
 }  // namespace splice::syntax

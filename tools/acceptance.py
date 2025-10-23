@@ -83,6 +83,10 @@ def main() -> int:
     manifest = {"schema": 1, "source_commit": source_commit, "files": {}}
     for path in sorted(EVIDENCE.glob("*.json")):
         manifest["files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
+    manifest["private_files"] = {}
+    for path in sorted((ROOT / ".agent-local").glob("*.json")):
+        if path.name in {"census.json", "concurrency.json", "stress-heavy.json"}:
+            manifest["private_files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     (ROOT / "acceptance" / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
     mutation = command_result("verifier-mutations", [sys.executable, "tools/acceptance_test.py"])
     acceptance["steps"].append(mutation)

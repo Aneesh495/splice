@@ -1,6 +1,6 @@
 #include "syntax/parser.hpp"
 
-#include <memory>
+#include <algorithm>
 #include <string>
 
 namespace splice::syntax {
@@ -71,6 +71,10 @@ CommandPtr Parser::parse_simple() {
     error(current().span, "unexpected token in command", "separate commands with a list operator");
     ++index_;
   }
+  if (pending_here_end_ != 0) {
+    while (index_ < tokens_.size() && tokens_[index_].span.begin < pending_here_end_) ++index_;
+    pending_here_end_ = 0;
+  }
   if (!saw_word && command->simple.redirections.empty()) {
     if (current().is(TokenKind::End) || current().is(TokenKind::Newline)) {
       incomplete_ = true;
@@ -108,8 +112,22 @@ bool Parser::collect_here_document(Redirection& redirection) {
     if (line == delimiter) {
       redirection.here_body = text.substr(body_start, cursor - body_start);
       redirection.here_strip_tabs = redirection.kind == RedirectionKind::HereDocumentStrip;
+      if (redirection.here_strip_tabs) {
+        std::string normalized;
+        std::size_t line_start = 0;
+        while (line_start < redirection.here_body.size()) {
+          const std::size_t line_end_body = redirection.here_body.find('\n', line_start);
+          const std::size_t end_body = line_end_body == std::string::npos ? redirection.here_body.size() : line_end_body;
+          std::size_t content_start = line_start;
+          while (content_start < end_body && redirection.here_body[content_start] == '\t') ++content_start;
+          normalized += redirection.here_body.substr(content_start, end_body - content_start);
+          if (line_end_body != std::string::npos) normalized.push_back('\n');
+          line_start = line_end_body == std::string::npos ? redirection.here_body.size() : line_end_body + 1;
+        }
+        redirection.here_body = std::move(normalized);
+      }
       const std::size_t delimiter_end = line_end == std::string::npos ? end : line_end + 1;
-      while (index_ < tokens_.size() && tokens_[index_].span.begin < delimiter_end) ++index_;
+      pending_here_end_ = std::max(pending_here_end_, delimiter_end);
       return true;
     }
     if (line_end == std::string::npos) break;

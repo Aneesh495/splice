@@ -21,12 +21,12 @@ def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int |
         path = evidence / "ctest.json"
         if not path.exists(): return None
         text = json.loads(path.read_text()).get("stdout", "")
-        return len(re.findall(r"\\d+/\\d+ Test", text))
+        return len(re.findall(r"\d+/\d+ Test", text))
     if gate_id == "pty-fast":
         path = evidence / "pty.json"
         if not path.exists(): return None
         text = json.loads(path.read_text()).get("stdout", "")
-        return len(re.findall(r"\\d+/\\d+ Test", text))
+        return len(re.findall(r"\d+/\d+ Test", text))
     source_map = {"differential-fast": "differential.json", "stress-fast": "stress.json", "fuzz-fast": "fuzz.json",
                   "benchmark": "benchmark.json", "private-census": "census.json"}
     if gate_id in source_map:
@@ -69,14 +69,24 @@ def main() -> int:
     source_commit = acceptance.get("source_commit", acceptance.get("commit"))
     if source_commit not in {current_commit, parent_commit}:
         failures.append("acceptance source commit is neither HEAD nor the immediate evidence parent")
+    elif source_commit == parent_commit:
+        changed = subprocess.run(["git", "diff", "--name-only", source_commit, current_commit], cwd=ROOT, text=True, capture_output=True, check=False).stdout.splitlines()
+        if any(not (path.startswith("acceptance/") or path == "docs/REVIEW.md") for path in changed):
+            failures.append("evidence commit contains non-evidence source changes")
     for relative, expected in manifest.get("files", {}).items():
         path = ROOT / relative
         if not path.exists():
             failures.append(f"missing artifact: {relative}")
         elif hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             failures.append(f"altered artifact: {relative}")
+    for relative, expected in manifest.get("private_files", {}).items():
+        path = ROOT / relative
+        if not path.exists(): failures.append(f"missing private artifact: {relative}")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != expected: failures.append(f"altered private artifact: {relative}")
     expected_acceptance_hash = manifest.get("acceptance_sha256")
-    if expected_acceptance_hash and hashlib.sha256(acceptance_path.read_bytes()).hexdigest() != expected_acceptance_hash:
+    if not expected_acceptance_hash:
+        failures.append("acceptance record hash is missing")
+    elif hashlib.sha256(acceptance_path.read_bytes()).hexdigest() != expected_acceptance_hash:
         failures.append("altered acceptance record")
     derived = {gate.get("id"): gate for gate in acceptance.get("derived_gates", [])}
     for required_gate in registry.get("gates", []):

@@ -24,7 +24,7 @@ Last updated: 2026-10-02
 - Native termios editor with bounded escape decoding, editing/history navigation, bracketed paste negotiation, redraw, EOF, and a dumb-terminal fallback.
 - Persistent escaped history store with bounded retention and malformed-tail recovery.
 - Independent `splice-lsp` JSON-RPC syntax-check process.
-- Bounded native `splice run --max-parallel N --manifest FILE` runner with JSON validation, process-group timeout cleanup, explicit `execve` PATH resolution without shell fallback, concurrent child capture, output caps, and per-task outcomes.
+- Bounded native `splice run --max-parallel N --manifest FILE` runner with JSON validation, process-group TERM timeout cleanup, explicit `execve` PATH resolution without shell fallback, concurrent child capture, output caps, and per-task outcomes; SIGKILL escalation remains open.
 - Reproducible Make entry points, frozen benchmark protocol, differential/fuzz/stress/benchmark drivers, private census, acceptance registry, artifact hashing, and read-only verification scripts.
 - Initial documentation, feature registry, focused syntax/runtime/fault/PTY/LSP/task cases, examples, and editable Mermaid diagrams.
 

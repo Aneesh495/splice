@@ -160,6 +160,7 @@ struct Active {
   std::string stderr_text;
   std::chrono::steady_clock::time_point started;
   bool timed_out{false};
+  std::chrono::steady_clock::time_point terminated_at{};
 };
 
 std::string resolve_executable(std::string_view name) {
@@ -292,12 +293,16 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
       close(stdout_pipe[1]); close(stderr_pipe[1]);
       set_nonblocking(stdout_pipe[0]); set_nonblocking(stderr_pipe[0]);
     }
-    active.push_back(Active{task, pid, pid, stdout_pipe[0], stderr_pipe[0], {}, {}, std::chrono::steady_clock::now(), false});
+    active.push_back(Active{task, pid, pid, stdout_pipe[0], stderr_pipe[0], {}, {}, std::chrono::steady_clock::now(), false, {}});
     return true;
   };
   auto cleanup_active = [&]() {
     for (auto& item : active) {
       if (item.process_group > 0) kill(-item.process_group, SIGTERM);
+    }
+    usleep(100000);
+    for (auto& item : active) {
+      if (item.process_group > 0) kill(-item.process_group, SIGKILL);
     }
     for (auto& item : active) {
       int status = 0;
@@ -325,10 +330,15 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
     for (auto& item : active) {
       drain_fd(item.stdout_fd, item.stdout_text);
       drain_fd(item.stderr_fd, item.stderr_text);
+      const auto now = std::chrono::steady_clock::now();
       if (item.spec.timeout_ms > 0 && !item.timed_out &&
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - item.started).count() > item.spec.timeout_ms) {
+          std::chrono::duration_cast<std::chrono::milliseconds>(now - item.started).count() > item.spec.timeout_ms) {
         if (item.process_group > 0) kill(-item.process_group, SIGTERM);
         item.timed_out = true;
+        item.terminated_at = now;
+      } else if (item.timed_out && item.process_group > 0 &&
+                 std::chrono::duration_cast<std::chrono::milliseconds>(now - item.terminated_at).count() > 100) {
+        kill(-item.process_group, SIGKILL);
       }
     }
     for (std::size_t index = 0; index < active.size();) {
