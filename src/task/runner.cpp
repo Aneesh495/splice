@@ -309,8 +309,9 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
       while (waitpid(item.pid, &status, 0) < 0 && errno == EINTR) {}
       drain_fd(item.stdout_fd, item.stdout_text);
       drain_fd(item.stderr_fd, item.stderr_text);
+      if (item.stdout_fd >= 0) close(item.stdout_fd);
+      if (item.stderr_fd >= 0) close(item.stderr_fd);
     }
-    active.clear();
   };
   while (next < tasks_.size() || !active.empty()) {
     while (next < tasks_.size() && active.size() < max_parallel_) {
@@ -355,6 +356,8 @@ std::vector<TaskOutcome> Runner::run(std::string& error) {
       }
       drain_fd(active[index].stdout_fd, active[index].stdout_text);
       drain_fd(active[index].stderr_fd, active[index].stderr_text);
+      if (active[index].stdout_fd >= 0) close(active[index].stdout_fd);
+      if (active[index].stderr_fd >= 0) close(active[index].stderr_fd);
       const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - active[index].started).count();
       const int result_status = active[index].timed_out ? 124 : (WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status));
       outcomes.push_back(TaskOutcome{active[index].spec.id, result_status, active[index].timed_out, duration, std::move(active[index].stdout_text), std::move(active[index].stderr_text)});

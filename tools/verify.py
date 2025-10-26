@@ -73,7 +73,8 @@ def main() -> int:
         changed = subprocess.run(["git", "diff", "--name-only", source_commit, current_commit], cwd=ROOT, text=True, capture_output=True, check=False).stdout.splitlines()
         if any(not (path.startswith("acceptance/") or path == "docs/REVIEW.md") for path in changed):
             failures.append("evidence commit contains non-evidence source changes")
-    for relative, expected in manifest.get("files", {}).items():
+    if manifest.get("source_commit") != source_commit:
+        failures.append("manifest source commit does not match acceptance source commit")
         path = ROOT / relative
         if not path.exists():
             failures.append(f"missing artifact: {relative}")
@@ -93,6 +94,10 @@ def main() -> int:
         artifact = required_gate.get("required_artifact")
         if artifact and not (ROOT / artifact).exists():
             failures.append(f"missing required artifact for {required_gate.get('id')}: {artifact}")
+        if artifact and artifact.startswith(".agent-local/") and artifact not in manifest.get("private_files", {}):
+            failures.append(f"required private artifact is not hashed: {artifact}")
+        if artifact and not artifact.startswith(".agent-local/") and artifact.startswith("acceptance/") and artifact not in manifest.get("files", {}):
+            failures.append(f"required public artifact is not hashed: {artifact}")
         gate = derived.get(required_gate.get("id"))
         if gate is None:
             failures.append(f"missing derived gate: {required_gate.get('id')}")

@@ -94,13 +94,13 @@ bool Parser::collect_here_document(Redirection& redirection) {
     delimiter = delimiter.substr(1, delimiter.size() - 2);
   }
   const std::string& text = source_.text();
-  std::size_t body_start = text.find('\n', redirection.target.span.end);
+  std::size_t body_start = pending_here_end_ != 0 ? pending_here_end_ : text.find('\n', redirection.target.span.end);
   if (body_start == std::string::npos) {
     incomplete_ = true;
     error(redirection.target.span, "here-document is missing its body", "add a newline and a delimiter-terminated body");
     return false;
   }
-  ++body_start;
+  if (pending_here_end_ == 0) ++body_start;
   std::size_t cursor = body_start;
   while (cursor <= text.size()) {
     const std::size_t line_end = text.find('\n', cursor);

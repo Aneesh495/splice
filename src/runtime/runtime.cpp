@@ -218,7 +218,7 @@ int Runtime::apply_descriptor_actions(const plan::PlannedCommand& command) {
 }
 
 int Runtime::apply_parent_descriptors(const plan::PlannedCommand& command, std::vector<int>& saved) {
-  saved.assign(3, -1);
+  saved.assign(3, -3);
   for (int fd = 0; fd < 3; ++fd) {
     saved[static_cast<std::size_t>(fd)] = dup(fd);
     if (saved[static_cast<std::size_t>(fd)] < 0 && errno != EBADF) {
@@ -231,7 +231,7 @@ int Runtime::apply_parent_descriptors(const plan::PlannedCommand& command, std::
 
 void Runtime::restore_parent_descriptors(const std::vector<int>& saved) {
   for (int fd = 0; fd < 3 && static_cast<std::size_t>(fd) < saved.size(); ++fd) {
-    if (saved[static_cast<std::size_t>(fd)] == -2) continue;
+    if (saved[static_cast<std::size_t>(fd)] == -2 || saved[static_cast<std::size_t>(fd)] == -3) continue;
     if (saved[static_cast<std::size_t>(fd)] >= 0) {
       dup2(saved[static_cast<std::size_t>(fd)], fd);
       close(saved[static_cast<std::size_t>(fd)]);
@@ -381,6 +381,7 @@ int Runtime::job_control(const std::vector<std::string>& argv) {
         break;
       }
       reap_one(pid, status);
+      if (job.state == JobState::Stopped) return job.status;
     }
     return job.status;
   };
@@ -556,7 +557,9 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
     }
     if (pid < 0) {
       report_error(std::string("fork: ") + std::strerror(errno));
-      for (const auto process : job.processes) kill(process.value, SIGTERM);
+      if (group > 0) kill(-group, SIGTERM);
+      usleep(100000);
+      if (group > 0) kill(-group, SIGKILL);
       for (const auto process : job.processes) {
         int child_status = 0;
         while (waitpid(process.value, &child_status, 0) < 0 && errno == EINTR) {}
