@@ -72,9 +72,17 @@ def main() -> int:
     gate("benchmark", 10, raw.get("benchmark", {}).get("repetitions", 0), steps[4], "computed samples are not the 60% target gate")
     gate("private-census", 10000, raw.get("census", {}).get("substantive_production_lines", 0), steps[5], "private ledger is ignored and not published")
     gate("pty-fast", 1, 1 if steps[6]["status"] == 0 else 0, steps[6], "one real PTY session; required campaign is 300")
-    for gate_id, required, reason in (("heavy-concurrency", 15000, "500 groups x 30 repetitions is not run by the fast campaign"),
-                                       ("heavy-stress", 180000, "180000 completed child cycles are not run by the fast campaign")):
-        gates.append({"id": gate_id, "required": required, "actual": 0, "command_status": None, "verified": False, "reason": reason})
+    heavy_concurrency_actual = 0
+    concurrency_path = ROOT / ".agent-local" / "concurrency.json"
+    if concurrency_path.exists():
+        concurrency_data = json.loads(concurrency_path.read_text())
+        heavy_concurrency_actual = int(concurrency_data.get("minimum_peak", 0)) * int(concurrency_data.get("repetitions", 0))
+    heavy_stress_actual = 0
+    stress_heavy_path = ROOT / ".agent-local" / "stress-heavy.json"
+    if stress_heavy_path.exists():
+        heavy_stress_actual = int(json.loads(stress_heavy_path.read_text()).get("completed_cycles", 0) or 0)
+    gates.append({"id": "heavy-concurrency", "required": 15000, "actual": heavy_concurrency_actual, "command_status": None, "verified": False, "reason": "bounded smoke observation only; 500 groups x 30 repetitions was not run"})
+    gates.append({"id": "heavy-stress", "required": 180000, "actual": heavy_stress_actual, "command_status": None, "verified": False, "reason": "180000 completed child cycles were not run by the bounded campaign"})
     source_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
     acceptance = {"schema": 1, "source_commit": source_commit, "platform": sys.platform, "steps": steps, "derived_gates": gates,
                   "campaign": "bounded-local", "unverified_required_campaigns": ["1200 authored cases", "20000 differential", "10000 malformed", "300 PTY", "500 groups x 30", "180000 stress", "2000000 fuzz", "Linux x86-64"]}
