@@ -22,11 +22,11 @@ def main() -> int:
         raise SystemExit("cycles must be positive")
     script = ";\n".join("/usr/bin/true" for _ in range(args.cycles)) + "\n"
     started = time.monotonic_ns()
-    result = subprocess.run([args.executable, "-c", script], text=True, capture_output=True, stdin=subprocess.DEVNULL, check=False)
+    result = subprocess.run([args.executable], input=script, text=True, capture_output=True, check=False)
     duration = time.monotonic_ns() - started
     evidence = {"schema": 1, "requested_cycles": args.cycles, "completed_cycles": args.cycles if result.returncode == 0 else None,
                 "status": result.returncode, "duration_ns": duration, "stdout_bytes": len(result.stdout), "stderr_bytes": len(result.stderr),
-                "persistent_zombie_observation": "not performed by fast driver"}
+                "transport": "stdin script pipe to avoid exec argument-size limits", "persistent_zombie_observation": "not performed by fast driver"}
     target = ROOT / ".agent-local" / ("stress-heavy.json" if args.cycles >= 180000 else "stress.json")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")

@@ -47,9 +47,10 @@ def main() -> int:
     parser.add_argument("--executable", default=str(ROOT / "build/splice"))
     parser.add_argument("--groups", type=int, default=500)
     parser.add_argument("--repetitions", type=int, default=1)
+    parser.add_argument("--hold-seconds", type=float, default=0.25)
     args = parser.parse_args()
-    rows = [one(args.executable, args.groups, .25) for _ in range(args.repetitions)]
-    evidence = {"schema": 1, "requested_groups": args.groups, "repetitions": args.repetitions, "runs": rows,
+    rows = [one(args.executable, args.groups, args.hold_seconds) for _ in range(args.repetitions)]
+    evidence = {"schema": 1, "requested_groups": args.groups, "repetitions": args.repetitions, "hold_seconds": args.hold_seconds, "runs": rows,
                 "minimum_peak": min((row["peak_live_groups"] for row in rows), default=0),
                 "observation": "ps records were filtered by exact shell parent PID and zombie state"}
     target = ROOT / ".agent-local" / "concurrency.json"
