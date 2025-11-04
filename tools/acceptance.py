@@ -81,8 +81,10 @@ def main() -> int:
     stress_heavy_path = ROOT / ".agent-local" / "stress-heavy.json"
     if stress_heavy_path.exists():
         heavy_stress_actual = int(json.loads(stress_heavy_path.read_text()).get("completed_cycles", 0) or 0)
-    gates.append({"id": "heavy-concurrency", "required": 15000, "actual": heavy_concurrency_actual, "command_status": None, "verified": False, "reason": "bounded smoke observation only; 500 groups x 30 repetitions was not run"})
-    gates.append({"id": "heavy-stress", "required": 180000, "actual": heavy_stress_actual, "command_status": None, "verified": False, "reason": "180000 completed child cycles were not run by the bounded campaign"})
+    heavy_concurrency_status = 0 if heavy_concurrency_actual >= 15000 and concurrency_path.exists() and all(run.get("status") == 0 for run in json.loads(concurrency_path.read_text()).get("runs", [])) else None
+    heavy_stress_status = 0 if heavy_stress_actual >= 180000 and stress_heavy_path.exists() and json.loads(stress_heavy_path.read_text()).get("status") == 0 else None
+    gates.append({"id": "heavy-concurrency", "required": 15000, "actual": heavy_concurrency_actual, "command_status": heavy_concurrency_status, "verified": heavy_concurrency_status == 0 and heavy_concurrency_actual >= 15000, "reason": "recorded independent 500-group campaign" if heavy_concurrency_status == 0 else "bounded smoke observation only; 500 groups x 30 repetitions was not run"})
+    gates.append({"id": "heavy-stress", "required": 180000, "actual": heavy_stress_actual, "command_status": heavy_stress_status, "verified": heavy_stress_status == 0 and heavy_stress_actual >= 180000, "reason": "recorded independent 180000-cycle campaign" if heavy_stress_status == 0 else "180000 completed child cycles were not run by the bounded campaign"})
     source_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
     acceptance = {"schema": 1, "source_commit": source_commit, "platform": sys.platform, "steps": steps, "derived_gates": gates,
                   "campaign": "bounded-local", "unverified_required_campaigns": ["1200 authored cases", "20000 differential", "10000 malformed", "300 PTY", "500 groups x 30", "180000 stress", "2000000 fuzz", "Linux x86-64"]}
