@@ -52,6 +52,13 @@
       "minimum_progress": 10
     },
     {
+      "id": "pty-heavy",
+      "description": "300 real PTY sessions with readiness markers",
+      "command": "tools/pty_campaign.py --sessions 300",
+      "required_artifact": ".agent-local/pty-heavy.json",
+      "minimum_progress": 300
+    },
+    {
       "id": "private-census",
       "description": "Ignored substantive production census",
       "command": "tools/census.py",

@@ -27,6 +27,10 @@ def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int |
         if not path.exists(): return None
         text = json.loads(path.read_text()).get("stdout", "")
         return len(re.findall(r"\d+/\d+ Test", text))
+    if gate_id == "pty-heavy":
+        path = root / ".agent-local" / "pty-heavy.json"
+        if not path.exists(): return None
+        return int(json.loads(path.read_text()).get("completed_sessions", 0) or 0)
     source_map = {"differential-fast": "differential.json", "stress-fast": "stress.json", "fuzz-fast": "fuzz.json",
                   "benchmark": "benchmark.json", "private-census": "census.json"}
     if gate_id in source_map:

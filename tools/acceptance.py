@@ -72,6 +72,10 @@ def main() -> int:
     gate("benchmark", 10, raw.get("benchmark", {}).get("repetitions", 0), steps[4], "computed samples are not the 60% target gate")
     gate("private-census", 10000, raw.get("census", {}).get("substantive_production_lines", 0), steps[5], "private ledger is ignored and not published")
     gate("pty-fast", 1, 1 if steps[6]["status"] == 0 else 0, steps[6], "one real PTY session; required campaign is 300")
+    pty_heavy_path = ROOT / ".agent-local" / "pty-heavy.json"
+    pty_heavy_actual = int(json.loads(pty_heavy_path.read_text()).get("completed_sessions", 0)) if pty_heavy_path.exists() else 0
+    pty_heavy_status = 0 if pty_heavy_actual >= 300 and pty_heavy_path.exists() and not json.loads(pty_heavy_path.read_text()).get("failures") else None
+    gates.append({"id": "pty-heavy", "required": 300, "actual": pty_heavy_actual, "command_status": pty_heavy_status, "verified": pty_heavy_status == 0 and pty_heavy_actual >= 300, "reason": "recorded independent 300-session campaign" if pty_heavy_status == 0 else "300-session campaign was not run"})
     heavy_concurrency_actual = 0
     concurrency_path = ROOT / ".agent-local" / "concurrency.json"
     if concurrency_path.exists():
@@ -95,7 +99,7 @@ def main() -> int:
         manifest["files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest["private_files"] = {}
     for path in sorted((ROOT / ".agent-local").glob("*.json")):
-        if path.name in {"census.json", "concurrency.json", "stress-heavy.json"}:
+        if path.name in {"census.json", "concurrency.json", "pty-heavy.json", "stress-heavy.json"}:
             manifest["private_files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     (ROOT / "acceptance" / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")
     mutation = command_result("verifier-mutations", [sys.executable, "tools/acceptance_test.py"])
