@@ -59,6 +59,13 @@
       "minimum_progress": 300
     },
     {
+      "id": "performance-targets",
+      "description": "60 percent dispatch and loaded p95 target",
+      "command": "make benchmark",
+      "required_artifact": "acceptance/evidence/benchmark.json",
+      "minimum_progress": 1
+    },
+    {
       "id": "private-census",
       "description": "Ignored substantive production census",
       "command": "tools/census.py",

@@ -31,6 +31,13 @@ def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int |
         path = root / ".agent-local" / "pty-heavy.json"
         if not path.exists(): return None
         return int(json.loads(path.read_text()).get("completed_sessions", 0) or 0)
+    if gate_id == "performance-targets":
+        path = root / ".agent-local" / "benchmark.json"
+        if not path.exists(): return None
+        data = json.loads(path.read_text())
+        reduction = data.get("dispatch_reduction_percent")
+        p95_values = [row.get("splice", {}).get("p95_ms", 999.0) for row in data.get("workloads", [])]
+        return 1 if reduction is not None and reduction >= 60.0 and p95_values and max(p95_values) < 5.0 else 0
     source_map = {"differential-fast": "differential.json", "stress-fast": "stress.json", "fuzz-fast": "fuzz.json",
                   "benchmark": "benchmark.json", "private-census": "census.json"}
     if gate_id in source_map:

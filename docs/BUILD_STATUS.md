@@ -39,12 +39,14 @@ Last updated: 2026-10-02
 - `tools/stress.py --cycles 1000`: passed with 1000 completed real external child cycles.
 - `tools/fuzz.py --cases 1000`: passed with 500 valid and 500 malformed syntax-only cases executed.
 - `tools/benchmark.py --repetitions 10`: computed median dispatch reduction of approximately 24% against Bash and Splice p95 above 5 ms; the 60% and loaded p95 targets are not met.
-- `tools/concurrency.py --groups 20`: observed 21 live groups in the bounded smoke workload; the 500 x 30 heavy gate was not run.
+- `tools/concurrency.py --groups 500 --repetitions 30 --hold-seconds 1.0`: passed all 30 repetitions with minimum observed peak 501 live process groups.
+- `tools/pty_campaign.py --sessions 300`: passed 300 real PTY sessions with zero failures.
+- `tools/stress.py --cycles 180000`: passed 180000 completed real external child cycles in 521.011 seconds through a stdin script transport; persistent zombie occupancy was not sampled.
 - `tools/acceptance.py` previously generated bounded evidence at source checkpoint `d8dcd0b`; it is stale after these repairs and must be regenerated after the repair commit. The verifier now rejects stale acceptance records, missing/altered artifacts, false derived thresholds, and unverified required gates.
 
 ## Incomplete gates
 
-The evidence harness and registry now exist, but the bounded campaign is not the hard acceptance campaign. The required 1,200 authored semantic cases, 20,000 valid differential programs, 10,000 malformed/incomplete programs, 300 PTY sessions, 500 groups in 30 repetitions, 180,000 completed child cycles, 2,000,000 sanitizer executions, Linux x86-64 profile, 10,000 substantive production lines, and hosted-tip verification remain incomplete. Current measured dispatch targets are explicitly missed: approximately 24% median reduction and p95 above 5 ms.
+The bounded campaign and the declared heavy concurrency, PTY, and stress workloads now have positive local evidence on macOS arm64. The original hard gates still incomplete are the 1,200 authored semantic cases, 20,000 distinct differential programs, 10,000 malformed/incomplete programs, 2,000,000 sanitizer executions, Linux x86-64 profile, 10,000 substantive production lines, independent zero-zombie/reaping measurements, and the performance targets. The measured dispatch target remains missed: the benchmark record must be read for the exact current percentage and p95.
 
 ## Next concrete action
 

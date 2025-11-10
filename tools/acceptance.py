@@ -70,6 +70,14 @@ def main() -> int:
     gate("stress-fast", 1000, raw.get("stress", {}).get("completed_cycles") or 0, steps[2])
     gate("fuzz-fast", 1000, raw.get("fuzz", {}).get("executed", 0), steps[3])
     gate("benchmark", 10, raw.get("benchmark", {}).get("repetitions", 0), steps[4], "computed samples are not the 60% target gate")
+    benchmark_path = ROOT / ".agent-local" / "benchmark.json"
+    performance_actual = 0
+    if benchmark_path.exists():
+        benchmark_data = json.loads(benchmark_path.read_text())
+        reduction = benchmark_data.get("dispatch_reduction_percent")
+        p95_values = [row.get("splice", {}).get("p95_ms", 999.0) for row in benchmark_data.get("workloads", [])]
+        performance_actual = 1 if reduction is not None and reduction >= 60.0 and p95_values and max(p95_values) < 5.0 else 0
+    gates.append({"id": "performance-targets", "required": 1, "actual": performance_actual, "command_status": steps[4]["status"], "verified": steps[4]["status"] == 0 and performance_actual == 1, "reason": "dispatch reduction and p95 must both meet frozen protocol targets"})
     gate("private-census", 10000, raw.get("census", {}).get("substantive_production_lines", 0), steps[5], "private ledger is ignored and not published")
     gate("pty-fast", 1, 1 if steps[6]["status"] == 0 else 0, steps[6], "one real PTY session; required campaign is 300")
     pty_heavy_path = ROOT / ".agent-local" / "pty-heavy.json"
@@ -90,8 +98,10 @@ def main() -> int:
     gates.append({"id": "heavy-concurrency", "required": 15000, "actual": heavy_concurrency_actual, "command_status": heavy_concurrency_status, "verified": heavy_concurrency_status == 0 and heavy_concurrency_actual >= 15000, "reason": "recorded independent 500-group campaign" if heavy_concurrency_status == 0 else "bounded smoke observation only; 500 groups x 30 repetitions was not run"})
     gates.append({"id": "heavy-stress", "required": 180000, "actual": heavy_stress_actual, "command_status": heavy_stress_status, "verified": heavy_stress_status == 0 and heavy_stress_actual >= 180000, "reason": "recorded independent 180000-cycle campaign" if heavy_stress_status == 0 else "180000 completed child cycles were not run by the bounded campaign"})
     source_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
+    unmet = [gate["id"] for gate in gates if not gate["verified"]]
+    unmet.extend(["1200 authored cases", "20000 differential programs", "10000 malformed programs", "2000000 sanitizer fuzz executions", "Linux x86-64"])
     acceptance = {"schema": 1, "source_commit": source_commit, "platform": sys.platform, "steps": steps, "derived_gates": gates,
-                  "campaign": "bounded-local", "unverified_required_campaigns": ["1200 authored cases", "20000 differential", "10000 malformed", "300 PTY", "500 groups x 30", "180000 stress", "2000000 fuzz", "Linux x86-64"]}
+                  "campaign": "bounded-local", "unverified_required_campaigns": unmet}
     target = ROOT / "acceptance" / "ACCEPTANCE.json"
     target.write_text(json.dumps(acceptance, indent=2) + "\n")
     manifest = {"schema": 1, "source_commit": source_commit, "files": {}}
