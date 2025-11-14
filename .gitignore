@@ -21,7 +21,8 @@
 .env
 
 # Generated campaign evidence and local counters
-/acceptance/evidence/
+/acceptance/evidence/*
+!/acceptance/evidence/*.json
 /acceptance/*.tmp
 /fuzz/corpus/
 *.pyc
