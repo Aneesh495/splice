@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "requested_cycles": 1000,
+  "completed_cycles": 1000,
+  "status": 0,
+  "duration_ns": 2293117291,
+  "stdout_bytes": 0,
+  "stderr_bytes": 0,
+  "transport": "stdin script pipe to avoid exec argument-size limits",
+  "persistent_zombie_observation": "not performed by fast driver"
+}

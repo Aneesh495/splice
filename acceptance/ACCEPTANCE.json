@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "source_commit": "e67abb292ee7f6bfd0f7adca9bb02a103024df45",
+  "platform": "darwin",
+  "steps": [
+    {
+      "name": "ctest",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "build",
+        "--output-on-failure"
+      ],
+      "status": 0,
+      "duration_ns": 1338883125,
+      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 1: splice_version\n1/8 Test #1: splice_version ...................   Passed    0.01 sec\n    Start 2: splice_help\n2/8 Test #2: splice_help ......................   Passed    0.00 sec\n    Start 3: splice_syntax_cases\n3/8 Test #3: splice_syntax_cases ..............   Passed    0.12 sec\n    Start 4: splice_runtime_cases\n4/8 Test #4: splice_runtime_cases .............   Passed    0.27 sec\n    Start 5: splice_runtime_fault_cases\n5/8 Test #5: splice_runtime_fault_cases .......   Passed    0.06 sec\n    Start 6: splice_pty_cases\n6/8 Test #6: splice_pty_cases .................   Passed    0.68 sec\n    Start 7: splice_lsp_cases\n7/8 Test #7: splice_lsp_cases .................   Passed    0.05 sec\n    Start 8: splice_task_cases\n8/8 Test #8: splice_task_cases ................   Passed    0.11 sec\n\n100% tests passed, 0 tests failed out of 8\n\nTotal Test time (real) =   1.30 sec\n",
+      "stderr": ""
+    },
+    {
+      "name": "differential",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/differential.py",
+        "--executable",
+        "/Users/aneeshkrishna/splice/build/splice",
+        "--count",
+        "100"
+      ],
+      "status": 0,
+      "duration_ns": 2244751833,
+      "stdout": "{\"requested\": 100, \"executed\": 100, \"matches\": 100, \"differences\": 0, \"references\": [\"dash-posix\", \"bash-posix\"]}\n",
+      "stderr": ""
+    },
+    {
+      "name": "stress",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/stress.py",
+        "--executable",
+        "/Users/aneeshkrishna/splice/build/splice",
+        "--cycles",
+        "1000"
+      ],
+      "status": 0,
+      "duration_ns": 2363830375,
+      "stdout": "{\"schema\": 1, \"requested_cycles\": 1000, \"completed_cycles\": 1000, \"status\": 0, \"duration_ns\": 2293117291, \"stdout_bytes\": 0, \"stderr_bytes\": 0, \"transport\": \"stdin script pipe to avoid exec argument-size limits\", \"persistent_zombie_observation\": \"not performed by fast driver\"}\n",
+      "stderr": ""
+    },
+    {
+      "name": "fuzz",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/fuzz.py",
+        "--executable",
+        "/Users/aneeshkrishna/splice/build/splice",
+        "--cases",
+        "1000"
+      ],
+      "status": 0,
+      "duration_ns": 6669744167,
+      "stdout": "{\"schema\": 1, \"seed\": 20261002, \"requested\": 1000, \"executed\": 1000, \"duration_ns\": 6603780625, \"outcomes\": {\"valid\": {\"accepted\": 500, \"rejected\": 0}, \"malformed\": {\"accepted\": 0, \"rejected\": 500}}, \"classification_failures\": 0, \"execution_policy\": \"all generated sources used -n and were confined to parser diagnostics\"}\n",
+      "stderr": ""
+    },
+    {
+      "name": "benchmark",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/benchmark.py",
+        "--executable",
+        "/Users/aneeshkrishna/splice/build/splice",
+        "--repetitions",
+        "10"
+      ],
+      "status": 0,
+      "duration_ns": 1872269792,
+      "stdout": "{\"workload_count\": 6, \"repetitions\": 10, \"dispatch_reduction_percent\": 12.822307639160005, \"target_status\": \"computed-not-accepted\"}\n",
+      "stderr": ""
+    },
+    {
+      "name": "census",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/census.py"
+      ],
+      "status": 0,
+      "duration_ns": 80092666,
+      "stdout": "{\"commit\": \"e67abb292ee7f6bfd0f7adca9bb02a103024df45\", \"substantive_production_lines\": 4689, \"physical_lines\": 5415}\n",
+      "stderr": ""
+    },
+    {
+      "name": "pty",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "build",
+        "--output-on-failure",
+        "-R",
+        "splice_pty_cases"
+      ],
+      "status": 0,
+      "duration_ns": 733484916,
+      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 6: splice_pty_cases\n1/1 Test #6: splice_pty_cases .................   Passed    0.71 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.72 sec\n",
+      "stderr": ""
+    },
+    {
+      "name": "verifier-mutations",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "tools/acceptance_test.py"
+      ],
+      "status": 0,
+      "duration_ns": 477283417,
+      "stdout": "acceptance mutation checks: missing, altered, and false-gate cases rejected\n",
+      "stderr": ""
+    }
+  ],
+  "derived_gates": [
+    {
+      "id": "fresh-build",
+      "required": 8,
+      "actual": 8,
+      "command_status": 0,
+      "verified": true,
+      "reason": "fast local CTest count; platform matrix not run"
+    },
+    {
+      "id": "foundation-fast",
+      "required": 8,
+      "actual": 8,
+      "command_status": 0,
+      "verified": true,
+      "reason": "focused local syntax/runtime suite; not the full F01-F30 corpus"
+    },
+    {
+      "id": "differential-fast",
+      "required": 100,
+      "actual": 100,
+      "command_status": 0,
+      "verified": true,
+      "reason": ""
+    },
+    {
+      "id": "stress-fast",
+      "required": 1000,
+      "actual": 1000,
+      "command_status": 0,
+      "verified": true,
+      "reason": ""
+    },
+    {
+      "id": "fuzz-fast",
+      "required": 1000,
+      "actual": 1000,
+      "command_status": 0,
+      "verified": true,
+      "reason": ""
+    },
+    {
+      "id": "benchmark",
+      "required": 10,
+      "actual": 10,
+      "command_status": 0,
+      "verified": true,
+      "reason": "computed samples are not the 60% target gate"
+    },
+    {
+      "id": "performance-targets",
+      "required": 1,
+      "actual": 0,
+      "command_status": 0,
+      "verified": false,
+      "reason": "dispatch reduction and p95 must both meet frozen protocol targets"
+    },
+    {
+      "id": "private-census",
+      "required": 10000,
+      "actual": 4689,
+      "command_status": 0,
+      "verified": false,
+      "reason": "private ledger is ignored and not published"
+    },
+    {
+      "id": "pty-fast",
+      "required": 1,
+      "actual": 1,
+      "command_status": 0,
+      "verified": true,
+      "reason": "one real PTY session; required campaign is 300"
+    },
+    {
+      "id": "pty-heavy",
+      "required": 300,
+      "actual": 300,
+      "command_status": 0,
+      "verified": true,
+      "reason": "recorded independent 300-session campaign"
+    },
+    {
+      "id": "heavy-concurrency",
+      "required": 15000,
+      "actual": 15030,
+      "command_status": 0,
+      "verified": true,
+      "reason": "recorded independent 500-group campaign"
+    },
+    {
+      "id": "heavy-stress",
+      "required": 180000,
+      "actual": 180000,
+      "command_status": 0,
+      "verified": true,
+      "reason": "recorded independent 180000-cycle campaign"
+    }
+  ],
+  "campaign": "bounded-local",
+  "unverified_required_campaigns": [
+    "performance-targets",
+    "private-census",
+    "1200 authored cases",
+    "20000 differential programs",
+    "10000 malformed programs",
+    "2000000 sanitizer fuzz executions",
+    "Linux x86-64"
+  ]
+}

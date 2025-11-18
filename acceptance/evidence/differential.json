@@ -1,0 +1,2414 @@
+{
+  "schema": 1,
+  "seed": 20261002,
+  "requested": 100,
+  "executed": 100,
+  "references": [
+    "dash-posix",
+    "bash-posix"
+  ],
+  "matches": 100,
+  "differences": 0,
+  "cases": [
+    {
+      "index": 0,
+      "script": "printf \"%s\\n\" \"value_20261002_0 double\"",
+      "splice": {
+        "stdout": "value_20261002_0 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_0 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_0 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "6599906eba678eea93dd835141793e5c962ce66ae6cc315fe11fba6d8989d37e"
+    },
+    {
+      "index": 1,
+      "script": "printf '%s\\n' *.definitely-unmatched-1",
+      "splice": {
+        "stdout": "*.definitely-unmatched-1\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-1\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-1\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "3b05fcedc46fda1c2dced1052d8067e21302319c4c3cb317045220e5b94b8c1c"
+    },
+    {
+      "index": 2,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 3,
+      "script": "x=value_20261002_3; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_3\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_3\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_3\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "97fcfd2f52020b2cffa10c8499bb3608cc81282dfe0bbb9e08e6d1a254526933"
+    },
+    {
+      "index": 4,
+      "script": "printf '%s\\n' value_20261002_4",
+      "splice": {
+        "stdout": "value_20261002_4\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_4\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_4\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "73f801aaff09114c9f0cdac7827c33ee906a8d34f73eb5037a74d9d312a06b56"
+    },
+    {
+      "index": 5,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_5}",
+      "splice": {
+        "stdout": "value_20261002_5\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_5\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_5\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e41c85361ee526629e687cf33898d3e5d8aba6c259174ff16e0ccea4c987b510"
+    },
+    {
+      "index": 6,
+      "script": "false && printf wrong_6; printf right_6",
+      "splice": {
+        "stdout": "right_6",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_6",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_6",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "6be5bd02c22e261cfad735dbec95f4c2dc5f97e65fb907e350f36cfd5282be2b"
+    },
+    {
+      "index": 7,
+      "script": "printf '%s\\n' 'value_20261002_7 quoted'",
+      "splice": {
+        "stdout": "value_20261002_7 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_7 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_7 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "a27fed6435a8fe6be61d8dd19fa4d046cf9e8ea8f7c71815cbd2f45645695df0"
+    },
+    {
+      "index": 8,
+      "script": "printf '%s\\n' \"$(printf nested_8)\"",
+      "splice": {
+        "stdout": "nested_8\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_8\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_8\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "63aa5d4c7252cea4436f737313d73ad8a50312280d0df8be7f13ecc73d5ed2bc"
+    },
+    {
+      "index": 9,
+      "script": "true || printf wrong_9; printf right_9",
+      "splice": {
+        "stdout": "right_9",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_9",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_9",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9d485cc6bf21ae1a11aa3c1f1d2e8eaa112135c3d17391cfcb1800c2fbad93af"
+    },
+    {
+      "index": 10,
+      "script": "printf \"%s\\n\" \"value_20261002_10 double\"",
+      "splice": {
+        "stdout": "value_20261002_10 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_10 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_10 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "1dbf2c4e2f49107c4f823894c8efa6ad23dd59f39b16143cc1b7bc3c433f650f"
+    },
+    {
+      "index": 11,
+      "script": "printf '%s\\n' *.definitely-unmatched-11",
+      "splice": {
+        "stdout": "*.definitely-unmatched-11\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-11\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-11\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "81d08bbda71cd3086fcdec35cf34c7e7b973dc8cbc0f09b771fe565c54e195a0"
+    },
+    {
+      "index": 12,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 13,
+      "script": "x=value_20261002_13; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_13\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_13\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_13\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "abe1068d859dbbad7fb02a725464d1ffe7184263b4d1729dc41a870cc61969ff"
+    },
+    {
+      "index": 14,
+      "script": "printf '%s\\n' value_20261002_14",
+      "splice": {
+        "stdout": "value_20261002_14\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_14\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_14\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "cf11f81ea11fc979f415102e491a90eac2085bad566b4bed8a235844d0cee353"
+    },
+    {
+      "index": 15,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_15}",
+      "splice": {
+        "stdout": "value_20261002_15\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_15\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_15\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "74626c23e84c0c0c978051661cc5bc1449bd3ec6b2c42f2f2f51a23f77be7200"
+    },
+    {
+      "index": 16,
+      "script": "false && printf wrong_16; printf right_16",
+      "splice": {
+        "stdout": "right_16",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_16",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_16",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "723cf1c3f1e39b7b8bc61dce17e336df80688b9c6513248bca8927a70ed544ea"
+    },
+    {
+      "index": 17,
+      "script": "printf '%s\\n' 'value_20261002_17 quoted'",
+      "splice": {
+        "stdout": "value_20261002_17 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_17 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_17 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "de99bdfa70259948eebe4d2c1f4d2b5ca15ba8e9d958fb70c28c5601529e500d"
+    },
+    {
+      "index": 18,
+      "script": "printf '%s\\n' \"$(printf nested_18)\"",
+      "splice": {
+        "stdout": "nested_18\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_18\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_18\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "ae0b14879336bf96964ea613d1a734949da7f43bcfe9f5356fa9917119168dd5"
+    },
+    {
+      "index": 19,
+      "script": "true || printf wrong_19; printf right_19",
+      "splice": {
+        "stdout": "right_19",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_19",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_19",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9e207ffef37c4ab2c5bf4b749dbc504eb24801a3f958af8379d43f5eba33d53c"
+    },
+    {
+      "index": 20,
+      "script": "printf \"%s\\n\" \"value_20261002_20 double\"",
+      "splice": {
+        "stdout": "value_20261002_20 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_20 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_20 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "51e3c7571f22d6b941f36dadc10d4b2dbfc05f22aeb92dfc681e1ffee655c9a4"
+    },
+    {
+      "index": 21,
+      "script": "printf '%s\\n' *.definitely-unmatched-21",
+      "splice": {
+        "stdout": "*.definitely-unmatched-21\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-21\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-21\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "869b5d754e44071102c953d995ac899f99177db3882c57cf57bd1b88eb55d703"
+    },
+    {
+      "index": 22,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 23,
+      "script": "x=value_20261002_23; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_23\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_23\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_23\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "812d223a5f9f3ed47a108f8415879215125f1ac0100c5eb42b6031d76c10b9e1"
+    },
+    {
+      "index": 24,
+      "script": "printf '%s\\n' value_20261002_24",
+      "splice": {
+        "stdout": "value_20261002_24\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_24\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_24\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "0d66b38f78275b2496d6276e103fd9e39e0b564e4c83f07b53532caa02380fea"
+    },
+    {
+      "index": 25,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_25}",
+      "splice": {
+        "stdout": "value_20261002_25\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_25\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_25\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "91a0f7817844a703a54abdda4934d0a7c7d24d3e77cc4bcc8a908f4cc3acab67"
+    },
+    {
+      "index": 26,
+      "script": "false && printf wrong_26; printf right_26",
+      "splice": {
+        "stdout": "right_26",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_26",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_26",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "dbed835c32b0534f2109967fd71e63e95c4d791cf1f3d1f1c946271499c81e00"
+    },
+    {
+      "index": 27,
+      "script": "printf '%s\\n' 'value_20261002_27 quoted'",
+      "splice": {
+        "stdout": "value_20261002_27 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_27 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_27 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9435d145a749dbb6aca2a7bcbce55d7692ffe92924cdb00a45d48d6350795f11"
+    },
+    {
+      "index": 28,
+      "script": "printf '%s\\n' \"$(printf nested_28)\"",
+      "splice": {
+        "stdout": "nested_28\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_28\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_28\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "35f61ec02d65e98fd629ddf310188d87eb824b62e78eb7f99e6febd2978d16cc"
+    },
+    {
+      "index": 29,
+      "script": "true || printf wrong_29; printf right_29",
+      "splice": {
+        "stdout": "right_29",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_29",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_29",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "3a8c877f3e8d9dc4b9571a34a67fb176d77b549a430197b60fdbce5fae2e4123"
+    },
+    {
+      "index": 30,
+      "script": "printf \"%s\\n\" \"value_20261002_30 double\"",
+      "splice": {
+        "stdout": "value_20261002_30 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_30 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_30 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "142537062532a4b70cf6697a72e01fed86faec4fe18fb1b95a0b1638e98cf99a"
+    },
+    {
+      "index": 31,
+      "script": "printf '%s\\n' *.definitely-unmatched-31",
+      "splice": {
+        "stdout": "*.definitely-unmatched-31\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-31\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-31\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "c925760c630ef5e9b3cd627bdec25bc481dc32a9397099d54590de40d4f4f2c8"
+    },
+    {
+      "index": 32,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 33,
+      "script": "x=value_20261002_33; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_33\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_33\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_33\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "0f89aa2044b9a61b5384c70b35c0efa0d685d4f282c68440bd6c29f8842e8a37"
+    },
+    {
+      "index": 34,
+      "script": "printf '%s\\n' value_20261002_34",
+      "splice": {
+        "stdout": "value_20261002_34\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_34\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_34\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "c61513eaca9c55450f528302322431a42714a1e3aeb36a59878c025bf038a8c4"
+    },
+    {
+      "index": 35,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_35}",
+      "splice": {
+        "stdout": "value_20261002_35\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_35\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_35\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "c8a784cfbf2c359ae06e1fcb501df841492891433b826df7d02a55c9cc57602a"
+    },
+    {
+      "index": 36,
+      "script": "false && printf wrong_36; printf right_36",
+      "splice": {
+        "stdout": "right_36",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_36",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_36",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "00a0ca95928ad3125198bfc699b7fc09d2287223d543c09fa5ce7ebbe729119b"
+    },
+    {
+      "index": 37,
+      "script": "printf '%s\\n' 'value_20261002_37 quoted'",
+      "splice": {
+        "stdout": "value_20261002_37 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_37 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_37 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9c0cd11b7226e675bba9e3a7f9ceb6b35058ef1d52e66b84bdb6e1567431c02c"
+    },
+    {
+      "index": 38,
+      "script": "printf '%s\\n' \"$(printf nested_38)\"",
+      "splice": {
+        "stdout": "nested_38\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_38\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_38\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "ee5fd6b0279dc5408db2f94a7dc786a7226f30b5cec3e816025cb8b7eace1234"
+    },
+    {
+      "index": 39,
+      "script": "true || printf wrong_39; printf right_39",
+      "splice": {
+        "stdout": "right_39",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_39",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_39",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "bde7efd0bd6ec05a047f7b7f3e6cb8303dee2a1d756649fc65c6a92ef8054016"
+    },
+    {
+      "index": 40,
+      "script": "printf \"%s\\n\" \"value_20261002_40 double\"",
+      "splice": {
+        "stdout": "value_20261002_40 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_40 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_40 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "79871063cc7be23e9778141c0e81f275df3eb9bc60ae696bf64f80332e4830e4"
+    },
+    {
+      "index": 41,
+      "script": "printf '%s\\n' *.definitely-unmatched-41",
+      "splice": {
+        "stdout": "*.definitely-unmatched-41\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-41\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-41\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "b7b5e1ed6c48b3f915db382c702894ebf9cb227e285647788a0f12701dc13533"
+    },
+    {
+      "index": 42,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 43,
+      "script": "x=value_20261002_43; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_43\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_43\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_43\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2ec191ce7423c4696216d2251cfc355e9b8985b0722b91e879c83eb9683d1d87"
+    },
+    {
+      "index": 44,
+      "script": "printf '%s\\n' value_20261002_44",
+      "splice": {
+        "stdout": "value_20261002_44\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_44\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_44\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "61409bdf7ad704c4ca0fa509d9c41b2f781eab83cfdef792f096c28d63ccfc73"
+    },
+    {
+      "index": 45,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_45}",
+      "splice": {
+        "stdout": "value_20261002_45\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_45\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_45\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "02eb18fa6ff2e14aefaacd90f14d1b55763eb8dded9e4c559ff9f801beab7edb"
+    },
+    {
+      "index": 46,
+      "script": "false && printf wrong_46; printf right_46",
+      "splice": {
+        "stdout": "right_46",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_46",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_46",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "045e7ea744c9d71c3d02c13ffccb23e5c244fd73f984cecfb054d7b792780730"
+    },
+    {
+      "index": 47,
+      "script": "printf '%s\\n' 'value_20261002_47 quoted'",
+      "splice": {
+        "stdout": "value_20261002_47 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_47 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_47 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "851e1fe248ed6079b734273caa012020073035b929addeabd57bce772c784dc9"
+    },
+    {
+      "index": 48,
+      "script": "printf '%s\\n' \"$(printf nested_48)\"",
+      "splice": {
+        "stdout": "nested_48\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_48\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_48\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2693bd13311f8502c611a15c10386c003a50c7bd3457c4c0cb273cf543c993a3"
+    },
+    {
+      "index": 49,
+      "script": "true || printf wrong_49; printf right_49",
+      "splice": {
+        "stdout": "right_49",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_49",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_49",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "4ec8772c1fd26de63a35acb34705b9e8ed44b8a54eb27c13ab3f4ef4f1799632"
+    },
+    {
+      "index": 50,
+      "script": "printf \"%s\\n\" \"value_20261002_50 double\"",
+      "splice": {
+        "stdout": "value_20261002_50 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_50 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_50 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "4341918d108a90da32bc42a4a911d3b3d2cdb7c66caf1a2875cc965cbe03ede5"
+    },
+    {
+      "index": 51,
+      "script": "printf '%s\\n' *.definitely-unmatched-51",
+      "splice": {
+        "stdout": "*.definitely-unmatched-51\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-51\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-51\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "473770a28d6ba343005ac25601f250884317e15f957ab13516d30bdae79e1bbf"
+    },
+    {
+      "index": 52,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 53,
+      "script": "x=value_20261002_53; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_53\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_53\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_53\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e0c4599243a0c5a1ac71994beb02beb612c4bd8685cfff63546fae5fa839107c"
+    },
+    {
+      "index": 54,
+      "script": "printf '%s\\n' value_20261002_54",
+      "splice": {
+        "stdout": "value_20261002_54\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_54\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_54\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9e8d48189c5b89d686ed894a26b8310454811df658851147d9c6bdf6a2c21e82"
+    },
+    {
+      "index": 55,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_55}",
+      "splice": {
+        "stdout": "value_20261002_55\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_55\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_55\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "4aafda5c41cd11924bad2c434080f037ce81c964339fdbbb797dd44e9805b4fa"
+    },
+    {
+      "index": 56,
+      "script": "false && printf wrong_56; printf right_56",
+      "splice": {
+        "stdout": "right_56",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_56",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_56",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "f727363635473c44215bd8c5b585250783379e170aec39bb92ea28520574953a"
+    },
+    {
+      "index": 57,
+      "script": "printf '%s\\n' 'value_20261002_57 quoted'",
+      "splice": {
+        "stdout": "value_20261002_57 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_57 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_57 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "6c689ecb6914b8c2791641f6168d27f14e02c85ee8b4222b82ea29ff5499e171"
+    },
+    {
+      "index": 58,
+      "script": "printf '%s\\n' \"$(printf nested_58)\"",
+      "splice": {
+        "stdout": "nested_58\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_58\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_58\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "c9febd0673485601e3f6b7eba9157b783cbd1af1354d09c4a2d7b93d351329e7"
+    },
+    {
+      "index": 59,
+      "script": "true || printf wrong_59; printf right_59",
+      "splice": {
+        "stdout": "right_59",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_59",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_59",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "107543d167d2479e55bbe0d7cd3b776e30f6dd67eb7875fc3848bc7ed95f3080"
+    },
+    {
+      "index": 60,
+      "script": "printf \"%s\\n\" \"value_20261002_60 double\"",
+      "splice": {
+        "stdout": "value_20261002_60 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_60 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_60 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "cb89b05d172df8f6230b72d91b0b624917f36bba58595b6accca3b155481a3aa"
+    },
+    {
+      "index": 61,
+      "script": "printf '%s\\n' *.definitely-unmatched-61",
+      "splice": {
+        "stdout": "*.definitely-unmatched-61\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-61\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-61\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "acde3c94122c82add2e0c7c0b2f2fcbb4fc801af83aa4fe87f17b6e00671ae6f"
+    },
+    {
+      "index": 62,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 63,
+      "script": "x=value_20261002_63; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_63\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_63\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_63\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "5dc4601cf39f55b3b31673fd685288400c6659d7fc32a3b09d65603f6ff4d0eb"
+    },
+    {
+      "index": 64,
+      "script": "printf '%s\\n' value_20261002_64",
+      "splice": {
+        "stdout": "value_20261002_64\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_64\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_64\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2d36542380125fa61a4ab1631b89344491dd454a7ded5c01ee901b0fd29ba3ae"
+    },
+    {
+      "index": 65,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_65}",
+      "splice": {
+        "stdout": "value_20261002_65\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_65\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_65\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2d684836028c9dba1c8cf67ebc46358eb951b81c9ca4fcb424383f9c8858b6da"
+    },
+    {
+      "index": 66,
+      "script": "false && printf wrong_66; printf right_66",
+      "splice": {
+        "stdout": "right_66",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_66",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_66",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "8cc89c51f4216785138c1fb9fc1955c6f06831c414e7aaf0be21373792e5ae11"
+    },
+    {
+      "index": 67,
+      "script": "printf '%s\\n' 'value_20261002_67 quoted'",
+      "splice": {
+        "stdout": "value_20261002_67 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_67 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_67 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "04e907478093293d97ca6f22953a6b53d299e4f0772f386c0ccff2f1c62f0a55"
+    },
+    {
+      "index": 68,
+      "script": "printf '%s\\n' \"$(printf nested_68)\"",
+      "splice": {
+        "stdout": "nested_68\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_68\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_68\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "ef33ea0c80f9a2b00effdd7f84b435c29ef017ff460509fa26dcaf8c86ef17d0"
+    },
+    {
+      "index": 69,
+      "script": "true || printf wrong_69; printf right_69",
+      "splice": {
+        "stdout": "right_69",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_69",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_69",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "a094073271b40c69c29380916e5418fb038f646aada1038a1134d358812378fd"
+    },
+    {
+      "index": 70,
+      "script": "printf \"%s\\n\" \"value_20261002_70 double\"",
+      "splice": {
+        "stdout": "value_20261002_70 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_70 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_70 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "5998ee7f3f657afcf7bc95d9e8a1ce77075d8a1ff6beabb4655e6e65733b54d7"
+    },
+    {
+      "index": 71,
+      "script": "printf '%s\\n' *.definitely-unmatched-71",
+      "splice": {
+        "stdout": "*.definitely-unmatched-71\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-71\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-71\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "438495cd48cf06954d5757d4591d5477613fa97cb3abbf65f253cc651fb8ca0c"
+    },
+    {
+      "index": 72,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 73,
+      "script": "x=value_20261002_73; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_73\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_73\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_73\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "60b3835fe57390d502def122796459ae9146a817c44fb2bec766a847083b40fe"
+    },
+    {
+      "index": 74,
+      "script": "printf '%s\\n' value_20261002_74",
+      "splice": {
+        "stdout": "value_20261002_74\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_74\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_74\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "6073522d96193ff071afb324d7cd7193a475261eac78aa6460d698cbb7386605"
+    },
+    {
+      "index": 75,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_75}",
+      "splice": {
+        "stdout": "value_20261002_75\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_75\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_75\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "10494dd33f59b1e51f3fe6249d80f521da28a33e4fa1640182e6522b87ba71c5"
+    },
+    {
+      "index": 76,
+      "script": "false && printf wrong_76; printf right_76",
+      "splice": {
+        "stdout": "right_76",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_76",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_76",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "885eff1efd34386e176750e60b07261bb78d64977a432481b0e3e9debfe91f1f"
+    },
+    {
+      "index": 77,
+      "script": "printf '%s\\n' 'value_20261002_77 quoted'",
+      "splice": {
+        "stdout": "value_20261002_77 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_77 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_77 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "9cb73e92377d944ea56751ab59e285224184df5a6472dc79ccc602a5fbccf9fe"
+    },
+    {
+      "index": 78,
+      "script": "printf '%s\\n' \"$(printf nested_78)\"",
+      "splice": {
+        "stdout": "nested_78\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_78\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_78\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "ebe0d2e3112dac69d85e5cd143774918442b2b39d298c20d169ee879c3b748ee"
+    },
+    {
+      "index": 79,
+      "script": "true || printf wrong_79; printf right_79",
+      "splice": {
+        "stdout": "right_79",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_79",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_79",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "b7ea7d9fba1a34b4d08c1b99de5c6174725f9a01d0f2bb4f5b974e677791b6ef"
+    },
+    {
+      "index": 80,
+      "script": "printf \"%s\\n\" \"value_20261002_80 double\"",
+      "splice": {
+        "stdout": "value_20261002_80 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_80 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_80 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "148086c8e417133bc35fab3f1cc8c637370e2abb444a4221cf6d06f809b5b601"
+    },
+    {
+      "index": 81,
+      "script": "printf '%s\\n' *.definitely-unmatched-81",
+      "splice": {
+        "stdout": "*.definitely-unmatched-81\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-81\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-81\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "a192ceffd583fb8a25f21166ab550ddc50a557f5e6338e2fb2f7e795b8f8723e"
+    },
+    {
+      "index": 82,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 83,
+      "script": "x=value_20261002_83; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_83\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_83\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_83\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "d67a224d696eea0795157408d19fd346b81b8b9a39d7cef5cdd1bee6165a5292"
+    },
+    {
+      "index": 84,
+      "script": "printf '%s\\n' value_20261002_84",
+      "splice": {
+        "stdout": "value_20261002_84\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_84\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_84\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "d848310116acf268486449388ade5904d4b35b6a9cf80b0d305f0013cc82c7a3"
+    },
+    {
+      "index": 85,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_85}",
+      "splice": {
+        "stdout": "value_20261002_85\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_85\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_85\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2713da9813092e943d8edc814caafbaea96edcc09bc4c8c57e8f4f5613b41ef6"
+    },
+    {
+      "index": 86,
+      "script": "false && printf wrong_86; printf right_86",
+      "splice": {
+        "stdout": "right_86",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_86",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_86",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "60d4d56e5e0c95a97e76bff817937f5912cadceda51a9ebdac9a910b1e5a65c6"
+    },
+    {
+      "index": 87,
+      "script": "printf '%s\\n' 'value_20261002_87 quoted'",
+      "splice": {
+        "stdout": "value_20261002_87 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_87 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_87 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "090e82957052bfe569cb5507b7e1f20e818c33df452c775dc23c7cf897e703b5"
+    },
+    {
+      "index": 88,
+      "script": "printf '%s\\n' \"$(printf nested_88)\"",
+      "splice": {
+        "stdout": "nested_88\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_88\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_88\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "60043674cca49cc6ab46bff98c3fca7e817eb0929b7cef8889cbdc45ba6dddf0"
+    },
+    {
+      "index": 89,
+      "script": "true || printf wrong_89; printf right_89",
+      "splice": {
+        "stdout": "right_89",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_89",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_89",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "11a5cc31546892e4a2aacfccee5c4cf258d04b757c71eade6502fa719e581dfa"
+    },
+    {
+      "index": 90,
+      "script": "printf \"%s\\n\" \"value_20261002_90 double\"",
+      "splice": {
+        "stdout": "value_20261002_90 double\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_90 double\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_90 double\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "12b877b92c56dee4fd383ccaf4a27d6a90df2cf914995f37ff60e8f5e3c721b3"
+    },
+    {
+      "index": 91,
+      "script": "printf '%s\\n' *.definitely-unmatched-91",
+      "splice": {
+        "stdout": "*.definitely-unmatched-91\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "*.definitely-unmatched-91\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "*.definitely-unmatched-91\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "087e20c3dc27ff4bdf53c5b55e28b5fcb85ea25d933c52bf7cb3419c39dafa0a"
+    },
+    {
+      "index": 92,
+      "script": "printf x | tr x y",
+      "splice": {
+        "stdout": "y",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "y",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "e44118830076f56a1122d73c466286eda95abc51873fedae41c85db569235230"
+    },
+    {
+      "index": 93,
+      "script": "x=value_20261002_93; printf '%s\\n' \"$x\"",
+      "splice": {
+        "stdout": "value_20261002_93\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_93\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_93\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "af3cb22a9221fec854dfdc3ec7a824f8e369f73ace4907c369ad26f8aabcf3c3"
+    },
+    {
+      "index": 94,
+      "script": "printf '%s\\n' value_20261002_94",
+      "splice": {
+        "stdout": "value_20261002_94\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_94\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_94\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "d56ee647a2e4b3e408eea1e86677de00c0531f005378c36e8ed9892dc59b45f9"
+    },
+    {
+      "index": 95,
+      "script": "printf '%s\\n' ${UNSET:-value_20261002_95}",
+      "splice": {
+        "stdout": "value_20261002_95\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_95\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_95\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "f5a6dad35ad12c312826f092b78273caae227944fa4fba333e769344ed004657"
+    },
+    {
+      "index": 96,
+      "script": "false && printf wrong_96; printf right_96",
+      "splice": {
+        "stdout": "right_96",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_96",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_96",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "d5620b68b79a1d80716c681458039cea51290af438901a0286de0f08c26aa059"
+    },
+    {
+      "index": 97,
+      "script": "printf '%s\\n' 'value_20261002_97 quoted'",
+      "splice": {
+        "stdout": "value_20261002_97 quoted\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "value_20261002_97 quoted\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "value_20261002_97 quoted\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "022effd1e839a7623e3815dd42523b6c4bbc268d924e0d4b95bee5e4dafee302"
+    },
+    {
+      "index": 98,
+      "script": "printf '%s\\n' \"$(printf nested_98)\"",
+      "splice": {
+        "stdout": "nested_98\n",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "nested_98\n",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "nested_98\n",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "2daa6f46ed2afceae94e0f8bee5e7c3038127679278951e58f895d841927ac43"
+    },
+    {
+      "index": 99,
+      "script": "true || printf wrong_99; printf right_99",
+      "splice": {
+        "stdout": "right_99",
+        "stderr": "",
+        "status": 0
+      },
+      "references": {
+        "dash-posix": {
+          "stdout": "right_99",
+          "stderr": "",
+          "status": 0
+        },
+        "bash-posix": {
+          "stdout": "right_99",
+          "stderr": "",
+          "status": 0
+        }
+      },
+      "equal": true,
+      "classification": "match",
+      "digest": "5cd84bb8c798178efbd522c11f691ea816144927774474abd2aaa355da3b5676"
+    }
+  ]
+}

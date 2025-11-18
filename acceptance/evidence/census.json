@@ -1,0 +1,232 @@
+{
+  "schema": 1,
+  "commit": "e67abb292ee7f6bfd0f7adca9bb02a103024df45",
+  "roots": [
+    "src",
+    "tools"
+  ],
+  "extensions": [
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".py"
+  ],
+  "excluded_parts": [
+    "build",
+    "build-debug",
+    "fixtures",
+    "generated",
+    "vendor"
+  ],
+  "substantive_production_lines": 4689,
+  "physical_lines": 5415,
+  "files": [
+    {
+      "path": "src/app/main.cpp",
+      "substantive": 259,
+      "physical": 291
+    },
+    {
+      "path": "src/builtins/builtins.cpp",
+      "substantive": 290,
+      "physical": 319
+    },
+    {
+      "path": "src/builtins/builtins.hpp",
+      "substantive": 19,
+      "physical": 31
+    },
+    {
+      "path": "src/expand/expander.cpp",
+      "substantive": 376,
+      "physical": 400
+    },
+    {
+      "path": "src/expand/expander.hpp",
+      "substantive": 37,
+      "physical": 56
+    },
+    {
+      "path": "src/expand/state.cpp",
+      "substantive": 109,
+      "physical": 134
+    },
+    {
+      "path": "src/expand/state.hpp",
+      "substantive": 42,
+      "physical": 62
+    },
+    {
+      "path": "src/history/history.cpp",
+      "substantive": 116,
+      "physical": 138
+    },
+    {
+      "path": "src/history/history.hpp",
+      "substantive": 28,
+      "physical": 41
+    },
+    {
+      "path": "src/inspect/trace.cpp",
+      "substantive": 52,
+      "physical": 64
+    },
+    {
+      "path": "src/inspect/trace.hpp",
+      "substantive": 25,
+      "physical": 39
+    },
+    {
+      "path": "src/interactive/editor.cpp",
+      "substantive": 133,
+      "physical": 157
+    },
+    {
+      "path": "src/interactive/editor.hpp",
+      "substantive": 34,
+      "physical": 48
+    },
+    {
+      "path": "src/language_tools/lsp_main.cpp",
+      "substantive": 80,
+      "physical": 95
+    },
+    {
+      "path": "src/plan/plan.cpp",
+      "substantive": 176,
+      "physical": 192
+    },
+    {
+      "path": "src/plan/plan.hpp",
+      "substantive": 45,
+      "physical": 65
+    },
+    {
+      "path": "src/runtime/runtime.cpp",
+      "substantive": 671,
+      "physical": 728
+    },
+    {
+      "path": "src/runtime/runtime.hpp",
+      "substantive": 77,
+      "physical": 99
+    },
+    {
+      "path": "src/source/source.hpp",
+      "substantive": 69,
+      "physical": 89
+    },
+    {
+      "path": "src/syntax/ast.cpp",
+      "substantive": 123,
+      "physical": 136
+    },
+    {
+      "path": "src/syntax/ast.hpp",
+      "substantive": 37,
+      "physical": 55
+    },
+    {
+      "path": "src/syntax/lexer.cpp",
+      "substantive": 336,
+      "physical": 358
+    },
+    {
+      "path": "src/syntax/lexer.hpp",
+      "substantive": 30,
+      "physical": 43
+    },
+    {
+      "path": "src/syntax/parser.cpp",
+      "substantive": 305,
+      "physical": 327
+    },
+    {
+      "path": "src/syntax/parser.hpp",
+      "substantive": 33,
+      "physical": 49
+    },
+    {
+      "path": "src/syntax/token.cpp",
+      "substantive": 41,
+      "physical": 46
+    },
+    {
+      "path": "src/syntax/token.hpp",
+      "substantive": 55,
+      "physical": 71
+    },
+    {
+      "path": "src/task/runner.cpp",
+      "substantive": 350,
+      "physical": 385
+    },
+    {
+      "path": "src/task/runner.hpp",
+      "substantive": 30,
+      "physical": 42
+    },
+    {
+      "path": "tools/acceptance.py",
+      "substantive": 112,
+      "physical": 125
+    },
+    {
+      "path": "tools/acceptance_test.py",
+      "substantive": 42,
+      "physical": 55
+    },
+    {
+      "path": "tools/benchmark.py",
+      "substantive": 69,
+      "physical": 84
+    },
+    {
+      "path": "tools/bootstrap.py",
+      "substantive": 20,
+      "physical": 29
+    },
+    {
+      "path": "tools/census.py",
+      "substantive": 60,
+      "physical": 71
+    },
+    {
+      "path": "tools/concurrency.py",
+      "substantive": 51,
+      "physical": 64
+    },
+    {
+      "path": "tools/demo.py",
+      "substantive": 21,
+      "physical": 30
+    },
+    {
+      "path": "tools/differential.py",
+      "substantive": 67,
+      "physical": 82
+    },
+    {
+      "path": "tools/fuzz.py",
+      "substantive": 47,
+      "physical": 60
+    },
+    {
+      "path": "tools/pty_campaign.py",
+      "substantive": 64,
+      "physical": 77
+    },
+    {
+      "path": "tools/stress.py",
+      "substantive": 29,
+      "physical": 38
+    },
+    {
+      "path": "tools/verify.py",
+      "substantive": 129,
+      "physical": 140
+    }
+  ],
+  "reconstruction": "Count nonblank, non-comment lines under src and tools; exclude generated/vendor/fixture paths. Tests, docs, build files, and generated artifacts are excluded from the production total."
+}

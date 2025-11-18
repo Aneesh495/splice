@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "source_commit": "e67abb292ee7f6bfd0f7adca9bb02a103024df45",
+  "files": {
+    "acceptance/evidence/benchmark.json": "4ef7ef3f5d2ca3884ef9c68150fe16708913b5532330c5f9e2eb3d8c26820b63",
+    "acceptance/evidence/census.json": "0449293db3c89b33b765e22b992efc8b45aa917d011611b6aba65cf3223c733d",
+    "acceptance/evidence/ctest.json": "446dd0e6068df7f9939db5a109d602cb65421491358c2e7e1cb818c12d016a74",
+    "acceptance/evidence/differential.json": "78dcd93a2722a136e1df9f421a5f6fc1ffc6dad36f629998d9f96cf6defb154c",
+    "acceptance/evidence/fuzz.json": "a5047a9c24bb6aee83e9ed452e195cdb47ae0256c07c29ff04a6e860524c30e8",
+    "acceptance/evidence/pty.json": "1d1a28bef21fd23757fb05b767764ab6b64f499de1a06b044bb99ffdfd7e8cec",
+    "acceptance/evidence/stress.json": "77e778606f040ae20db647fb7f095cec7639ee7c067f304c67d6c4016a066e44"
+  },
+  "private_files": {
+    ".agent-local/census.json": "0449293db3c89b33b765e22b992efc8b45aa917d011611b6aba65cf3223c733d",
+    ".agent-local/concurrency.json": "2254853031be0f14ce0e35e7695bf13cc034945cc884f0133e0358519e153fd4",
+    ".agent-local/pty-heavy.json": "50dd97ce5c695918c5ac5f164ed33bc1303cf7d9df5ed7d61e127d5fee09e88f",
+    ".agent-local/stress-heavy.json": "83c2d06d080fbb54c2d67c2508b1f6ad27b0c842f509d8866fb7b92c1cd29563"
+  },
+  "acceptance_sha256": "d683ae9bbc13641e6248df608663bb13bd1fa52902a1220144d44acfb3ecad3f"
+}

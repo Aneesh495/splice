@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "seed": 20261002,
+  "requested": 1000,
+  "executed": 1000,
+  "duration_ns": 6603780625,
+  "outcomes": {
+    "valid": {
+      "accepted": 500,
+      "rejected": 0
+    },
+    "malformed": {
+      "accepted": 0,
+      "rejected": 500
+    }
+  },
+  "classification_failures": 0,
+  "execution_policy": "all generated sources used -n and were confined to parser diagnostics"
+}
