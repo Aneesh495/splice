@@ -6,7 +6,7 @@ Last updated: 2026-10-02
 
 - Repository: `splice`
 - Branch: `main`
-- Remote: `https://github.com/Aneesh495/splice.git`; local and hosted main tips matched at the last publication checkpoint.
+- Remote: `https://github.com/Aneesh495/splice.git`; local and hosted `main` tips match final evidence commit `80158f4`.
 - Authenticated GitHub account: `Aneesh495`.
 - Workspace was empty and had no ancestor Git repository.
 
@@ -42,7 +42,9 @@ Last updated: 2026-10-02
 - `tools/concurrency.py --groups 500 --repetitions 30 --hold-seconds 1.0`: passed all 30 repetitions with minimum observed peak 501 live process groups.
 - `tools/pty_campaign.py --sessions 300`: passed 300 real PTY sessions with zero failures.
 - `tools/stress.py --cycles 180000`: passed 180000 completed real external child cycles in 521.011 seconds through a stdin script transport; persistent zombie occupancy was not sampled.
-- `tools/acceptance.py` previously generated bounded evidence at source checkpoint `d8dcd0b`; it is stale after these repairs and must be regenerated after the repair commit. The verifier now rejects stale acceptance records, missing/altered artifacts, false derived thresholds, and unverified required gates.
+- `tools/acceptance.py`: final scrubbed evidence was regenerated for source commit `e67abb2`; the evidence-only publication commit is `80158f4`.
+- `tools/verify.py`: final result is intentionally nonzero for exactly `performance-targets` and `private-census`; all other recorded registry gates verify from hashed evidence.
+- `git diff --check`: passed after the final source/evidence review.
 
 ## Incomplete gates
 
@@ -50,6 +52,4 @@ The bounded campaign and the declared heavy concurrency, PTY, and stress workloa
 
 ## Next concrete action
 
-Commit and publish the semantic repair batch, rerun the bounded acceptance campaign against that source commit, perform a second skeptical review, then commit the evidence snapshot and verify the local/hosted tips. Heavy or unavailable gates must remain explicitly incomplete.
-
-- `git diff --check`: passed after the semantic repair batch.
+The repository is published with the strongest completed local evidence. Any continuation should add distinct authored language cases, Linux validation, reaping/zombie measurements, sanitizer campaigns, and performance optimization before changing the two failed gate results. Do not mark the final state complete while `make verify` reports those failures.
