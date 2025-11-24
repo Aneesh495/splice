@@ -3,7 +3,7 @@
   "seed": 20261002,
   "requested": 1000,
   "executed": 1000,
-  "duration_ns": 6603780625,
+  "duration_ns": 5946321209,
   "outcomes": {
     "valid": {
       "accepted": 500,

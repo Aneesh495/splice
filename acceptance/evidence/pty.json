@@ -9,7 +9,7 @@
     "splice_pty_cases"
   ],
   "status": 0,
-  "duration_ns": 733484916,
-  "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 6: splice_pty_cases\n1/1 Test #6: splice_pty_cases .................   Passed    0.71 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.72 sec\n",
+  "duration_ns": 716004834,
+  "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 6: splice_pty_cases\n1/1 Test #6: splice_pty_cases .................   Passed    0.69 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.69 sec\n",
   "stderr": ""
 }
