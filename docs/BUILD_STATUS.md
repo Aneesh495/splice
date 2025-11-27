@@ -6,7 +6,7 @@ Last updated: 2026-10-02
 
 - Repository: `splice`
 - Branch: `main`
-- Remote: `https://github.com/Aneesh495/splice.git`; local and hosted `main` tips match final evidence commit `80158f4`.
+- Remote: `https://github.com/Aneesh495/splice.git`; local and hosted `main` tips match the final evidence snapshot recorded by `acceptance/MANIFEST.json`.
 - Authenticated GitHub account: `Aneesh495`.
 - Workspace was empty and had no ancestor Git repository.
 
@@ -42,7 +42,7 @@ Last updated: 2026-10-02
 - `tools/concurrency.py --groups 500 --repetitions 30 --hold-seconds 1.0`: passed all 30 repetitions with minimum observed peak 501 live process groups.
 - `tools/pty_campaign.py --sessions 300`: passed 300 real PTY sessions with zero failures.
 - `tools/stress.py --cycles 180000`: passed 180000 completed real external child cycles in 521.011 seconds through a stdin script transport; persistent zombie occupancy was not sampled.
-- `tools/acceptance.py`: final scrubbed evidence was regenerated for source commit `e67abb2`; the evidence-only publication commit is `80158f4`.
+- `tools/acceptance.py`: final scrubbed evidence is regenerated for the source commit recorded in `acceptance/ACCEPTANCE.json`; the evidence-only publication commit is the current `main` tip.
 - `tools/verify.py`: final result is intentionally nonzero for exactly `performance-targets` and `private-census`; all other recorded registry gates verify from hashed evidence.
 - `git diff --check`: passed after the final source/evidence review.
 

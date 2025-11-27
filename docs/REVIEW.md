@@ -8,7 +8,7 @@ Date: 2026-10-02
 
 The native execution path is real and inspectable for the implemented subset: source bytes become quote-preserving tokens and AST nodes, expansions become ordered plans, plans launch real `fork`/`execve` pipelines, descriptors are applied in order, process groups are tracked, and statuses are collected by one runtime owner. The second and third review passes repaired pipeline stage-order status, subshell isolation, arithmetic precedence, ordinary and large here-documents, `<<-` tab stripping, `|&`, closed-target descriptor opens, readonly assignment validation, nested `command` dispatch, explicit task `execve`, task TERM-to-KILL escalation, trace sequence continuity, and acceptance threshold/hash checks.
 
-The heavy local campaigns also have positive evidence: 500-group concurrency in 30 repetitions with a minimum peak of 501, 300 real PTY sessions with zero failures, and 180,000 completed external child cycles. The final published snapshot is tied to source commit `e67abb2` through an evidence-only child commit `80158f4`, and the hosted/local branch tips match.
+The heavy local campaigns also have positive evidence: 500-group concurrency in 30 repetitions with a minimum peak of 501, 300 real PTY sessions with zero failures, and 180,000 completed external child cycles. The final published snapshot is tied to the source commit recorded in `acceptance/ACCEPTANCE.json` through an evidence-only child commit, and the hosted/local branch tips match.
 
 ## Remaining material findings
 
