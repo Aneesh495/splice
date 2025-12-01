@@ -1,20 +1,20 @@
 {
   "schema": 1,
-  "source_commit": "e3a54e1edc50b31908cbb69dc735280251b4e5dd",
+  "source_commit": "01ea760b3c1427c81d76320a28b92b6f4043e7b8",
   "files": {
-    "acceptance/evidence/benchmark.json": "590dea5d17bb22375f64a3e8d0a1c269c07fb48e2928ffa989a8a76342eef730",
-    "acceptance/evidence/census.json": "7cfe83ca9afb332c7cde4dead50e4441fa5e86c3582a040fac1b8ef246cbea35",
-    "acceptance/evidence/ctest.json": "fb1dfba72c2c66bb372ab30c994cb46998718f1a57d0389598e2bd7ec9ec4832",
+    "acceptance/evidence/benchmark.json": "8a96837d920dca296c0ce4637a62521d02f47f5f795344660c1254625f927fc1",
+    "acceptance/evidence/census.json": "9d1507a044825697d5047c4c81c61d86dd10388252a1cbe32ab063611ac42f5b",
+    "acceptance/evidence/ctest.json": "555348e7e98429470634d19805990e65b6f48aa221564d7e71e41378543b71bb",
     "acceptance/evidence/differential.json": "78dcd93a2722a136e1df9f421a5f6fc1ffc6dad36f629998d9f96cf6defb154c",
-    "acceptance/evidence/fuzz.json": "7d66e83add9db7c6ccc4c92d07835da99e3fd38f935893ac6e46b47f712cc23b",
-    "acceptance/evidence/pty.json": "ab304fd4843cc59560d56a62588fd9fc786c32fe3481394d7b4ffc27ba3fff30",
-    "acceptance/evidence/stress.json": "23e40d76cff314f52581ba442a63742fef413f4bb0a51d24c25b0aa5506bb9cb"
+    "acceptance/evidence/fuzz.json": "c8efb71da192b94a7d02911ad03c79a9e97a7136bbe41f537479e7348a1b7e58",
+    "acceptance/evidence/pty.json": "7827d2745911d4fd753579788efed52ca64bfbb68323701f3bc1e3cbbc270447",
+    "acceptance/evidence/stress.json": "c5d27856de633a47c3d41f117f36fd47bd4b9f8b15ed0b885a2e79846ae1e428"
   },
   "private_files": {
-    ".agent-local/census.json": "7cfe83ca9afb332c7cde4dead50e4441fa5e86c3582a040fac1b8ef246cbea35",
+    ".agent-local/census.json": "9d1507a044825697d5047c4c81c61d86dd10388252a1cbe32ab063611ac42f5b",
     ".agent-local/concurrency.json": "2254853031be0f14ce0e35e7695bf13cc034945cc884f0133e0358519e153fd4",
     ".agent-local/pty-heavy.json": "50dd97ce5c695918c5ac5f164ed33bc1303cf7d9df5ed7d61e127d5fee09e88f",
     ".agent-local/stress-heavy.json": "83c2d06d080fbb54c2d67c2508b1f6ad27b0c842f509d8866fb7b92c1cd29563"
   },
-  "acceptance_sha256": "c53d374961bcabf7d227a2a5f33b19371e3fb388c4bb54dbc274a5f88eb9858d"
+  "acceptance_sha256": "f7a278b8bb42137428a86570c2e6221ec63116f77f11e4604cc8b1c8cfa0a593"
 }
