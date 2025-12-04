@@ -1,6 +1,7 @@
 #include "syntax/parser.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <string>
 
 namespace splice::syntax {
@@ -11,14 +12,19 @@ bool is_command_terminator(TokenKind kind) {
          kind == TokenKind::Semicolon || kind == TokenKind::Ampersand ||
          kind == TokenKind::Pipe || kind == TokenKind::PipeAnd ||
          kind == TokenKind::AndIf || kind == TokenKind::OrIf ||
-         kind == TokenKind::RightParen || kind == TokenKind::RightBrace;
+         kind == TokenKind::RightParen || kind == TokenKind::RightBrace ||
+         kind == TokenKind::SemiSemi || kind == TokenKind::SemiAnd ||
+         kind == TokenKind::SemiSemiAnd || kind == TokenKind::DRightParen ||
+         kind == TokenKind::DRightBracket;
 }
 
 bool is_redirection(TokenKind kind) {
   return kind == TokenKind::Less || kind == TokenKind::Greater ||
          kind == TokenKind::Append || kind == TokenKind::HereDocument ||
          kind == TokenKind::HereDocumentStrip || kind == TokenKind::DupInput ||
-         kind == TokenKind::DupOutput;
+         kind == TokenKind::DupOutput || kind == TokenKind::HereString ||
+         kind == TokenKind::Clobber || kind == TokenKind::AndGreater ||
+         kind == TokenKind::AndAppend;
 }
 
 }  // namespace
@@ -41,6 +47,25 @@ void Parser::error(source::Span span, std::string message, std::string repair) {
 
 bool Parser::expect(TokenKind kind, const char* message, const char* repair) {
   if (accept(kind)) return true;
+  if (current().is(TokenKind::End)) incomplete_ = true;
+  error(current().span, message, repair);
+  return false;
+}
+
+bool Parser::is_reserved(std::string_view word) const {
+  if (!current().is(TokenKind::Word)) return false;
+  if (current().word.spelling != word) return false;
+  return current().word.parts.size() == 1 && current().word.parts.front().kind == WordPartKind::Literal;
+}
+
+bool Parser::accept_reserved(std::string_view word) {
+  if (!is_reserved(word)) return false;
+  ++index_;
+  return true;
+}
+
+bool Parser::expect_reserved(std::string_view word, const char* message, const char* repair) {
+  if (accept_reserved(word)) return true;
   if (current().is(TokenKind::End)) incomplete_ = true;
   error(current().span, message, repair);
   return false;
@@ -139,52 +164,450 @@ bool Parser::collect_here_document(Redirection& redirection) {
 }
 
 bool Parser::parse_redirection(SimpleCommand& command) {
-  const std::size_t start = current().span.begin;
-  int fd = -1;
-  if (current().is(TokenKind::IoNumber)) {
-    try {
-      fd = std::stoi(current().text);
-    } catch (...) {
-      error(current().span, "invalid file descriptor", "use a decimal descriptor");
+  return parse_redirection_list(command.redirections);
+}
+
+bool Parser::parse_redirection_list(std::vector<Redirection>& redirections) {
+  while (current().is(TokenKind::IoNumber) || is_redirection(current().kind)) {
+    const std::size_t start = current().span.begin;
+    int fd = -1;
+    if (current().is(TokenKind::IoNumber)) {
+      try {
+        fd = std::stoi(current().text);
+      } catch (...) {
+        error(current().span, "invalid file descriptor", "use a decimal descriptor");
+        ++index_;
+        return false;
+      }
       ++index_;
-      return false;
+    }
+    const Token operation = current();
+    RedirectionKind kind;
+    switch (operation.kind) {
+      case TokenKind::Less: kind = RedirectionKind::Input; if (fd < 0) fd = 0; break;
+      case TokenKind::Greater: kind = RedirectionKind::Output; if (fd < 0) fd = 1; break;
+      case TokenKind::Append: kind = RedirectionKind::Append; if (fd < 0) fd = 1; break;
+      case TokenKind::HereDocument: kind = RedirectionKind::HereDocument; if (fd < 0) fd = 0; break;
+      case TokenKind::HereDocumentStrip: kind = RedirectionKind::HereDocumentStrip; if (fd < 0) fd = 0; break;
+      case TokenKind::DupInput: kind = RedirectionKind::DupInput; if (fd < 0) fd = 0; break;
+      case TokenKind::DupOutput: kind = RedirectionKind::DupOutput; if (fd < 0) fd = 1; break;
+      case TokenKind::HereString: kind = RedirectionKind::HereString; if (fd < 0) fd = 0; break;
+      case TokenKind::Clobber: kind = RedirectionKind::OutputClobber; if (fd < 0) fd = 1; break;
+      case TokenKind::AndGreater: kind = RedirectionKind::OutputAndStderr; if (fd < 0) fd = 1; break;
+      case TokenKind::AndAppend: kind = RedirectionKind::AppendAndStderr; if (fd < 0) fd = 1; break;
+      default:
+        error(operation.span, "expected a redirection operator", "use `<`, `>`, or a supported redirection operator");
+        return false;
     }
     ++index_;
-  }
-  const Token operation = current();
-  RedirectionKind kind;
-  switch (operation.kind) {
-    case TokenKind::Less: kind = RedirectionKind::Input; if (fd < 0) fd = 0; break;
-    case TokenKind::Greater: kind = RedirectionKind::Output; if (fd < 0) fd = 1; break;
-    case TokenKind::Append: kind = RedirectionKind::Append; if (fd < 0) fd = 1; break;
-    case TokenKind::HereDocument: kind = RedirectionKind::HereDocument; if (fd < 0) fd = 0; break;
-    case TokenKind::HereDocumentStrip: kind = RedirectionKind::HereDocumentStrip; if (fd < 0) fd = 0; break;
-    case TokenKind::DupInput: kind = RedirectionKind::DupInput; if (fd < 0) fd = 0; break;
-    case TokenKind::DupOutput: kind = RedirectionKind::DupOutput; if (fd < 0) fd = 1; break;
-    default:
-      error(operation.span, "expected a redirection operator", "use `<`, `>`, or a supported redirection operator");
+    if (!current().is(TokenKind::Word)) {
+      if (current().is(TokenKind::End) || current().is(TokenKind::Newline)) incomplete_ = true;
+      error(current().span, "redirection is missing its operand", "put a filename or descriptor after the operator");
       return false;
+    }
+    Redirection redirection;
+    redirection.fd = fd;
+    redirection.kind = kind;
+    redirection.target = current().word;
+    redirection.span = source::Span{start, current().span.end};
+    ++index_;
+    if (kind == RedirectionKind::HereDocument || kind == RedirectionKind::HereDocumentStrip) {
+      if (!collect_here_document(redirection)) return false;
+    }
+    redirections.push_back(std::move(redirection));
   }
-  ++index_;
-  if (!current().is(TokenKind::Word)) {
-    if (current().is(TokenKind::End) || current().is(TokenKind::Newline)) incomplete_ = true;
-    error(current().span, "redirection is missing its operand", "put a filename or descriptor after the operator");
-    return false;
-  }
-  Redirection redirection;
-  redirection.fd = fd;
-  redirection.kind = kind;
-  redirection.target = current().word;
-  redirection.span = source::Span{start, current().span.end};
-  ++index_;
-  if (kind == RedirectionKind::HereDocument || kind == RedirectionKind::HereDocumentStrip) {
-    if (!collect_here_document(redirection)) return false;
-  }
-  command.redirections.push_back(std::move(redirection));
   return true;
 }
 
+CommandPtr Parser::parse_if() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip 'if'
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::If;
+  command->if_cmd = std::make_shared<IfCommand>();
+  command->span.begin = start;
+
+  skip_newlines();
+  auto condition = parse_list(false, false);
+  if (condition == nullptr) return nullptr;
+  skip_newlines();
+  if (!expect_reserved("then", "expected `then` after if condition", "add `then`")) return nullptr;
+  skip_newlines();
+  auto body = parse_list(false, false);
+  command->if_cmd->clauses.push_back(IfClause{std::move(condition), std::move(body)});
+
+  while (is_reserved("elif")) {
+    ++index_;
+    skip_newlines();
+    auto elif_cond = parse_list(false, false);
+    if (elif_cond == nullptr) return nullptr;
+    skip_newlines();
+    if (!expect_reserved("then", "expected `then` after elif condition", "add `then`")) return nullptr;
+    skip_newlines();
+    auto elif_body = parse_list(false, false);
+    command->if_cmd->clauses.push_back(IfClause{std::move(elif_cond), std::move(elif_body)});
+  }
+
+  if (accept_reserved("else")) {
+    skip_newlines();
+    command->if_cmd->else_body = parse_list(false, false);
+  }
+
+  skip_newlines();
+  if (!expect_reserved("fi", "expected `fi` to close if statement", "close with `fi`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_for() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip 'for'
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::For;
+  command->for_cmd = std::make_shared<ForCommand>();
+  command->span.begin = start;
+
+  skip_newlines();
+  if (current().is(TokenKind::DLeftParen)) {
+    command->for_cmd->is_arithmetic = true;
+    ++index_;
+    std::string text;
+    while (!current().is(TokenKind::DRightParen) && !current().is(TokenKind::End)) {
+      text += current().text + " ";
+      ++index_;
+    }
+    if (!expect(TokenKind::DRightParen, "expected `))` in arithmetic for", "close with `))`")) return nullptr;
+    const std::size_t s1 = text.find(';');
+    const std::size_t s2 = s1 != std::string::npos ? text.find(';', s1 + 1) : std::string::npos;
+    if (s1 != std::string::npos) {
+      command->for_cmd->arith_init = text.substr(0, s1);
+      if (s2 != std::string::npos) {
+        command->for_cmd->arith_cond = text.substr(s1 + 1, s2 - s1 - 1);
+        command->for_cmd->arith_step = text.substr(s2 + 1);
+      } else {
+        command->for_cmd->arith_cond = text.substr(s1 + 1);
+      }
+    }
+  } else {
+    if (!current().is(TokenKind::Word)) {
+      error(current().span, "expected variable name after for", "provide a variable name");
+      return nullptr;
+    }
+    command->for_cmd->name = current().word.spelling;
+    ++index_;
+    skip_newlines();
+    if (accept_reserved("in")) {
+      while (!current().is(TokenKind::End) && !current().is(TokenKind::Newline) &&
+             !current().is(TokenKind::Semicolon) && !is_reserved("do")) {
+        if (current().is(TokenKind::Word)) {
+          command->for_cmd->words.push_back(current().word);
+          ++index_;
+        } else {
+          break;
+        }
+      }
+      if (current().is(TokenKind::Semicolon) || current().is(TokenKind::Newline)) ++index_;
+    } else if (current().is(TokenKind::Semicolon)) {
+      ++index_;
+    }
+  }
+  skip_newlines();
+  if (!expect_reserved("do", "expected `do` after for header", "add `do`")) return nullptr;
+  skip_newlines();
+  command->for_cmd->body = parse_list(false, false);
+  skip_newlines();
+  if (!expect_reserved("done", "expected `done` to close for loop", "close with `done`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_while(bool until) {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip 'while' or 'until'
+  auto command = std::make_shared<Command>();
+  command->kind = until ? CommandKind::Until : CommandKind::While;
+  command->while_cmd = std::make_shared<WhileCommand>();
+  command->while_cmd->until = until;
+  command->span.begin = start;
+
+  skip_newlines();
+  command->while_cmd->condition = parse_list(false, false);
+  if (command->while_cmd->condition == nullptr) return nullptr;
+  skip_newlines();
+  if (!expect_reserved("do", "expected `do` after loop condition", "add `do`")) return nullptr;
+  skip_newlines();
+  command->while_cmd->body = parse_list(false, false);
+  skip_newlines();
+  if (!expect_reserved("done", "expected `done` to close loop", "close with `done`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_case() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip 'case'
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::Case;
+  command->case_cmd = std::make_shared<CaseCommand>();
+  command->span.begin = start;
+
+  skip_newlines();
+  if (!current().is(TokenKind::Word)) {
+    error(current().span, "expected word after case", "provide a word to match");
+    return nullptr;
+  }
+  command->case_cmd->word = current().word;
+  ++index_;
+  skip_newlines();
+  if (!expect_reserved("in", "expected `in` after case word", "add `in`")) return nullptr;
+  skip_newlines();
+
+  while (!is_reserved("esac") && !current().is(TokenKind::End)) {
+    if (current().is(TokenKind::LeftParen)) ++index_;
+    CaseItem item;
+    while (!current().is(TokenKind::End)) {
+      if (!current().is(TokenKind::Word)) {
+        error(current().span, "expected pattern in case arm", "provide a pattern");
+        return nullptr;
+      }
+      item.patterns.push_back(current().word);
+      ++index_;
+      if (current().is(TokenKind::Pipe)) {
+        ++index_;
+        continue;
+      }
+      if (current().is(TokenKind::RightParen)) {
+        ++index_;
+        break;
+      }
+    }
+    skip_newlines();
+    if (!is_reserved("esac") && !current().is(TokenKind::SemiSemi)) {
+      item.body = parse_list(false, false);
+    }
+    command->case_cmd->items.push_back(std::move(item));
+    skip_newlines();
+    if (current().is(TokenKind::SemiSemi) || current().is(TokenKind::SemiAnd) ||
+        current().is(TokenKind::SemiSemiAnd)) {
+      ++index_;
+      skip_newlines();
+    }
+  }
+
+  if (!expect_reserved("esac", "expected `esac` to close case", "close with `esac`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_cond_expr() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip '[['
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::CondExpr;
+  command->span.begin = start;
+
+  std::vector<Token> cond_tokens;
+  while (!current().is(TokenKind::DRightBracket) && !current().is(TokenKind::End)) {
+    if (current().is(TokenKind::Newline)) {
+      ++index_;
+      continue;
+    }
+    cond_tokens.push_back(current());
+    ++index_;
+  }
+  if (!expect(TokenKind::DRightBracket, "expected `]]` to close conditional expression", "close with `]]`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+
+  if (!cond_tokens.empty()) {
+    std::size_t c_idx = 0;
+    std::function<CondNodePtr()> parse_expr_fn;
+    std::function<CondNodePtr()> parse_and_fn;
+    std::function<CondNodePtr()> parse_primary_fn;
+
+    parse_primary_fn = [&]() -> CondNodePtr {
+      if (c_idx >= cond_tokens.size()) return nullptr;
+      if (cond_tokens[c_idx].is(TokenKind::LeftParen)) {
+        ++c_idx;
+        auto node = parse_expr_fn();
+        if (c_idx < cond_tokens.size() && cond_tokens[c_idx].is(TokenKind::RightParen)) ++c_idx;
+        return node;
+      }
+      if (cond_tokens[c_idx].is(TokenKind::Bang)) {
+        ++c_idx;
+        auto child = parse_primary_fn();
+        auto node = std::make_shared<CondNode>();
+        node->op = CondOp::Not;
+        node->left_child = std::move(child);
+        return node;
+      }
+      if (c_idx < cond_tokens.size()) {
+        const auto& t1 = cond_tokens[c_idx++];
+        if (c_idx < cond_tokens.size()) {
+          const auto& t2 = cond_tokens[c_idx];
+          if (t1.text.starts_with("-") && t1.text.size() == 2 &&
+              !cond_tokens[c_idx].is(TokenKind::AndIf) && !cond_tokens[c_idx].is(TokenKind::OrIf)) {
+            auto node = std::make_shared<CondNode>();
+            node->op = CondOp::Unary;
+            node->op_text = t1.text;
+            node->left = cond_tokens[c_idx++].word;
+            return node;
+          }
+          if (t2.text == "==" || t2.text == "!=" || t2.text == "=~" ||
+              t2.text == "<" || t2.text == ">" || t2.text == "=" ||
+              t2.text == "-eq" || t2.text == "-ne" || t2.text == "-lt" ||
+              t2.text == "-le" || t2.text == "-gt" || t2.text == "-ge" ||
+              t2.text == "-nt" || t2.text == "-ot" || t2.text == "-ef") {
+            ++c_idx;
+            Word right_word;
+            if (c_idx < cond_tokens.size()) right_word = cond_tokens[c_idx++].word;
+            auto node = std::make_shared<CondNode>();
+            node->op = CondOp::Binary;
+            node->op_text = t2.text;
+            node->left = t1.word;
+            node->right = std::move(right_word);
+            return node;
+          }
+        }
+        auto node = std::make_shared<CondNode>();
+        node->op = CondOp::Unary;
+        node->op_text = "-n";
+        node->left = t1.word;
+        return node;
+      }
+      return nullptr;
+    };
+
+    parse_and_fn = [&]() -> CondNodePtr {
+      auto left = parse_primary_fn();
+      while (c_idx < cond_tokens.size() && cond_tokens[c_idx].is(TokenKind::AndIf)) {
+        ++c_idx;
+        auto right = parse_primary_fn();
+        auto node = std::make_shared<CondNode>();
+        node->op = CondOp::And;
+        node->left_child = std::move(left);
+        node->right_child = std::move(right);
+        left = node;
+      }
+      return left;
+    };
+
+    parse_expr_fn = [&]() -> CondNodePtr {
+      auto left = parse_and_fn();
+      while (c_idx < cond_tokens.size() && cond_tokens[c_idx].is(TokenKind::OrIf)) {
+        ++c_idx;
+        auto right = parse_and_fn();
+        auto node = std::make_shared<CondNode>();
+        node->op = CondOp::Or;
+        node->left_child = std::move(left);
+        node->right_child = std::move(right);
+        left = node;
+      }
+      return left;
+    };
+
+    command->cond_expr = parse_expr_fn();
+  }
+
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_arith_command() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip '(('
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::ArithCommand;
+  command->span.begin = start;
+  std::string expr;
+  while (!current().is(TokenKind::DRightParen) && !current().is(TokenKind::End)) {
+    expr += current().text + " ";
+    ++index_;
+  }
+  if (!expect(TokenKind::DRightParen, "expected `))` to close arithmetic command", "close with `))`")) return nullptr;
+  command->span.end = tokens_[index_ - 1].span.end;
+  command->arith_expr = std::move(expr);
+  parse_redirection_list(command->redirections);
+  return command;
+}
+
+CommandPtr Parser::parse_time() {
+  const std::size_t start = current().span.begin;
+  ++index_; // skip 'time'
+  bool posix_format = false;
+  if (current().is(TokenKind::Word) && current().word.spelling == "-p") {
+    posix_format = true;
+    ++index_;
+  }
+  skip_newlines();
+  auto pipeline = parse_pipeline(false, false);
+  if (pipeline == nullptr) return nullptr;
+  auto command = std::make_shared<Command>();
+  command->kind = CommandKind::Time;
+  command->span.begin = start;
+  command->span.end = pipeline->span.end;
+  command->time_cmd = std::make_shared<TimeCommand>();
+  command->time_cmd->posix_format = posix_format;
+  command->time_cmd->command = std::move(pipeline);
+  return command;
+}
+
 CommandPtr Parser::parse_command(bool stop_at_right_paren, bool stop_at_right_brace) {
+  if (is_reserved("if")) return parse_if();
+  if (is_reserved("for")) return parse_for();
+  if (is_reserved("while")) return parse_while(false);
+  if (is_reserved("until")) return parse_while(true);
+  if (is_reserved("case")) return parse_case();
+  if (is_reserved("time")) return parse_time();
+  if (is_reserved("function")) {
+    const std::size_t start = current().span.begin;
+    ++index_;
+    skip_newlines();
+    if (!current().is(TokenKind::Word)) {
+      error(current().span, "expected function name", "provide a valid function name");
+      return nullptr;
+    }
+    std::string name = current().word.spelling;
+    ++index_;
+    skip_newlines();
+    if (current().is(TokenKind::LeftParen)) {
+      ++index_;
+      if (!expect(TokenKind::RightParen, "expected `)` after `(`", "close with `)`")) return nullptr;
+    }
+    skip_newlines();
+    auto body = parse_command(stop_at_right_paren, stop_at_right_brace);
+    if (body == nullptr) return nullptr;
+    auto cmd = std::make_shared<Command>();
+    cmd->kind = CommandKind::Function;
+    cmd->span.begin = start;
+    cmd->span.end = body->span.end;
+    cmd->name = std::move(name);
+    cmd->children.push_back(std::move(body));
+    parse_redirection_list(cmd->redirections);
+    return cmd;
+  }
+  if (current().is(TokenKind::Word) && peek(1).is(TokenKind::LeftParen) && peek(2).is(TokenKind::RightParen)) {
+    const std::size_t start = current().span.begin;
+    std::string name = current().word.spelling;
+    index_ += 3;
+    skip_newlines();
+    auto body = parse_command(stop_at_right_paren, stop_at_right_brace);
+    if (body == nullptr) return nullptr;
+    auto cmd = std::make_shared<Command>();
+    cmd->kind = CommandKind::Function;
+    cmd->span.begin = start;
+    cmd->span.end = body->span.end;
+    cmd->name = std::move(name);
+    cmd->children.push_back(std::move(body));
+    parse_redirection_list(cmd->redirections);
+    return cmd;
+  }
+  if (current().is(TokenKind::DLeftBracket)) return parse_cond_expr();
+  if (current().is(TokenKind::DLeftParen)) return parse_arith_command();
+
   if (current().is(TokenKind::LeftParen)) {
     auto command = std::make_shared<Command>();
     command->kind = CommandKind::Subshell;
@@ -195,6 +618,7 @@ CommandPtr Parser::parse_command(bool stop_at_right_paren, bool stop_at_right_br
     if (body != nullptr) command->children.push_back(body);
     if (!expect(TokenKind::RightParen, "subshell is missing `)`", "close the subshell")) return command;
     command->span.end = tokens_[index_ - 1].span.end;
+    parse_redirection_list(command->redirections);
     return command;
   }
   if (current().is(TokenKind::LeftBrace)) {
@@ -207,6 +631,7 @@ CommandPtr Parser::parse_command(bool stop_at_right_paren, bool stop_at_right_br
     if (body != nullptr) command->children.push_back(body);
     if (!expect(TokenKind::RightBrace, "command group is missing `}`", "close the command group")) return command;
     command->span.end = tokens_[index_ - 1].span.end;
+    parse_redirection_list(command->redirections);
     return command;
   }
   if (current().is(TokenKind::Bang)) {
@@ -260,6 +685,12 @@ CommandPtr Parser::parse_and_or(bool stop_at_right_paren, bool stop_at_right_bra
 
 CommandPtr Parser::parse_list(bool stop_at_right_paren, bool stop_at_right_brace) {
   skip_newlines();
+  if (is_reserved("then") || is_reserved("elif") || is_reserved("else") ||
+      is_reserved("fi") || is_reserved("do") || is_reserved("done") ||
+      is_reserved("esac") || current().is(TokenKind::SemiSemi) ||
+      current().is(TokenKind::SemiAnd) || current().is(TokenKind::SemiSemiAnd)) {
+    return nullptr;
+  }
   auto first = parse_and_or(stop_at_right_paren, stop_at_right_brace);
   if (first == nullptr) return nullptr;
   std::vector<CommandPtr> commands;
@@ -273,6 +704,10 @@ CommandPtr Parser::parse_list(bool stop_at_right_paren, bool stop_at_right_brace
     skip_newlines();
     if ((stop_at_right_paren && current().is(TokenKind::RightParen)) ||
         (stop_at_right_brace && current().is(TokenKind::RightBrace)) ||
+        is_reserved("then") || is_reserved("elif") || is_reserved("else") ||
+        is_reserved("fi") || is_reserved("do") || is_reserved("done") ||
+        is_reserved("esac") || current().is(TokenKind::SemiSemi) ||
+        current().is(TokenKind::SemiAnd) || current().is(TokenKind::SemiSemiAnd) ||
         current().is(TokenKind::End)) {
       if (separator.is(TokenKind::Ampersand)) {
         auto background = std::make_shared<Command>();
@@ -310,7 +745,13 @@ ParseResult Parser::run() {
   skip_newlines();
   while (!current().is(TokenKind::End)) {
     const auto command = parse_list(false, false);
-    if (command != nullptr) result.program.commands.push_back(command);
+    if (command != nullptr) {
+      result.program.commands.push_back(command);
+    } else {
+      if (current().is(TokenKind::End)) break;
+      error(current().span, "unexpected token: " + current().text, "remove or replace this token");
+      ++index_;
+    }
     skip_newlines();
     if (current().is(TokenKind::RightParen) || current().is(TokenKind::RightBrace)) {
       error(current().span, "unexpected closing delimiter", "remove this delimiter or open its group");

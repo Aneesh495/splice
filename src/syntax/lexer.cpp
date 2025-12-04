@@ -6,15 +6,17 @@
 namespace splice::syntax {
 namespace {
 
-bool is_operator_start(char value) {
+bool is_operator_start(char value, char next = '\0') {
+  if (value == '[' && next == '[') return true;
+  if (value == ']' && next == ']') return true;
   return value == ';' || value == '&' || value == '|' || value == '<' ||
          value == '>' || value == '(' || value == ')' || value == '{' ||
          value == '}' || value == '!';
 }
 
-bool is_boundary(char value) {
+bool is_boundary(char value, char next = '\0') {
   return value == '\0' || value == ' ' || value == '\t' || value == '\r' ||
-         value == '\n' || is_operator_start(value);
+         value == '\n' || is_operator_start(value, next);
 }
 
 }  // namespace
@@ -192,7 +194,7 @@ bool Lexer::scan_word(LexResult& result) {
 
   while (!at_end()) {
     const char value = peek();
-    if (is_boundary(value)) break;
+    if (is_boundary(value, peek(1))) break;
     if (value == '\\') {
       flush_literal();
       const std::size_t escape_start = offset_++;
@@ -274,12 +276,33 @@ bool Lexer::scan_operator(LexResult& result) {
   const char first = peek();
   TokenKind kind = TokenKind::End;
   std::size_t width = 1;
-  if (first == ';') kind = TokenKind::Semicolon;
-  else if (first == '&') {
+  if (first == ';') {
+    kind = TokenKind::Semicolon;
+    if (peek(1) == ';') {
+      if (peek(2) == '&') {
+        kind = TokenKind::SemiSemiAnd;
+        width = 3;
+      } else {
+        kind = TokenKind::SemiSemi;
+        width = 2;
+      }
+    } else if (peek(1) == '&') {
+      kind = TokenKind::SemiAnd;
+      width = 2;
+    }
+  } else if (first == '&') {
     kind = TokenKind::Ampersand;
     if (peek(1) == '&') {
       kind = TokenKind::AndIf;
       width = 2;
+    } else if (peek(1) == '>') {
+      if (peek(2) == '>') {
+        kind = TokenKind::AndAppend;
+        width = 3;
+      } else {
+        kind = TokenKind::AndGreater;
+        width = 2;
+      }
     }
   } else if (first == '|') {
     kind = TokenKind::Pipe;
@@ -293,8 +316,16 @@ bool Lexer::scan_operator(LexResult& result) {
   } else if (first == '<') {
     kind = TokenKind::Less;
     if (peek(1) == '<') {
-      kind = peek(2) == '-' ? TokenKind::HereDocumentStrip : TokenKind::HereDocument;
-      width = kind == TokenKind::HereDocumentStrip ? 3 : 2;
+      if (peek(2) == '<') {
+        kind = TokenKind::HereString;
+        width = 3;
+      } else if (peek(2) == '-') {
+        kind = TokenKind::HereDocumentStrip;
+        width = 3;
+      } else {
+        kind = TokenKind::HereDocument;
+        width = 2;
+      }
     } else if (peek(1) == '&') {
       kind = TokenKind::DupInput;
       width = 2;
@@ -307,13 +338,32 @@ bool Lexer::scan_operator(LexResult& result) {
     } else if (peek(1) == '&') {
       kind = TokenKind::DupOutput;
       width = 2;
+    } else if (peek(1) == '|') {
+      kind = TokenKind::Clobber;
+      width = 2;
     }
-  } else if (first == '(') kind = TokenKind::LeftParen;
-  else if (first == ')') kind = TokenKind::RightParen;
-  else if (first == '{') kind = TokenKind::LeftBrace;
+  } else if (first == '(') {
+    kind = TokenKind::LeftParen;
+    if (peek(1) == '(') {
+      kind = TokenKind::DLeftParen;
+      width = 2;
+    }
+  } else if (first == ')') {
+    kind = TokenKind::RightParen;
+    if (peek(1) == ')') {
+      kind = TokenKind::DRightParen;
+      width = 2;
+    }
+  } else if (first == '{') kind = TokenKind::LeftBrace;
   else if (first == '}') kind = TokenKind::RightBrace;
   else if (first == '!') kind = TokenKind::Bang;
-  else return false;
+  else if (first == '[' && peek(1) == '[') {
+    kind = TokenKind::DLeftBracket;
+    width = 2;
+  } else if (first == ']' && peek(1) == ']') {
+    kind = TokenKind::DRightBracket;
+    width = 2;
+  } else return false;
 
   offset_ += width;
   result.tokens.push_back(Token{kind, source::Span{start, offset_},
@@ -341,7 +391,7 @@ LexResult Lexer::run() {
                                     input_.substr(start, offset_ - start), {}});
       continue;
     }
-    if (is_operator_start(peek()) && scan_operator(result)) continue;
+    if (is_operator_start(peek(), peek(1)) && scan_operator(result)) continue;
     if (!scan_word(result)) {
       if (!result.diagnostics.has_error()) {
         error(result.diagnostics, source::Span{offset_, offset_ + 1},

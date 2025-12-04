@@ -28,13 +28,25 @@ class Parser {
   [[nodiscard]] const Token& peek(std::size_t distance) const noexcept;
   bool accept(TokenKind kind);
   bool expect(TokenKind kind, const char* message, const char* repair);
+  bool is_reserved(std::string_view word) const;
+  bool accept_reserved(std::string_view word);
+  bool expect_reserved(std::string_view word, const char* message, const char* repair);
   void skip_newlines();
+
   CommandPtr parse_list(bool stop_at_right_paren = false, bool stop_at_right_brace = false);
   CommandPtr parse_and_or(bool stop_at_right_paren, bool stop_at_right_brace);
   CommandPtr parse_pipeline(bool stop_at_right_paren, bool stop_at_right_brace);
   CommandPtr parse_command(bool stop_at_right_paren, bool stop_at_right_brace);
   CommandPtr parse_simple();
+  CommandPtr parse_if();
+  CommandPtr parse_for();
+  CommandPtr parse_while(bool until);
+  CommandPtr parse_case();
+  CommandPtr parse_cond_expr();
+  CommandPtr parse_arith_command();
+  CommandPtr parse_time();
   bool parse_redirection(SimpleCommand& command);
+  bool parse_redirection_list(std::vector<Redirection>& redirections);
   bool collect_here_document(Redirection& redirection);
   void error(source::Span span, std::string message, std::string repair = {});
 

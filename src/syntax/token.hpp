@@ -30,6 +30,17 @@ enum class TokenKind {
   LeftBrace,
   RightBrace,
   Bang,
+  HereString,
+  AndGreater,
+  AndAppend,
+  Clobber,
+  DLeftParen,
+  DRightParen,
+  DLeftBracket,
+  DRightBracket,
+  SemiSemi,
+  SemiAnd,
+  SemiSemiAnd,
 };
 
 enum class WordPartKind {

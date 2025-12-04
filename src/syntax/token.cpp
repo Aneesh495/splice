@@ -26,6 +26,17 @@ const char* token_name(TokenKind kind) noexcept {
     case TokenKind::LeftBrace: return "left-brace";
     case TokenKind::RightBrace: return "right-brace";
     case TokenKind::Bang: return "bang";
+    case TokenKind::HereString: return "here-string";
+    case TokenKind::AndGreater: return "and-greater";
+    case TokenKind::AndAppend: return "and-append";
+    case TokenKind::Clobber: return "clobber";
+    case TokenKind::DLeftParen: return "double-left-parenthesis";
+    case TokenKind::DRightParen: return "double-right-parenthesis";
+    case TokenKind::DLeftBracket: return "double-left-bracket";
+    case TokenKind::DRightBracket: return "double-right-bracket";
+    case TokenKind::SemiSemi: return "semi-semi";
+    case TokenKind::SemiAnd: return "semi-and";
+    case TokenKind::SemiSemiAnd: return "semi-semi-and";
   }
   return "unknown";
 }

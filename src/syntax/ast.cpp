@@ -86,6 +86,14 @@ const char* command_kind_name(CommandKind kind) noexcept {
     case CommandKind::Subshell: return "subshell";
     case CommandKind::Group: return "group";
     case CommandKind::Function: return "function";
+    case CommandKind::If: return "if";
+    case CommandKind::For: return "for";
+    case CommandKind::While: return "while";
+    case CommandKind::Until: return "until";
+    case CommandKind::Case: return "case";
+    case CommandKind::CondExpr: return "cond-expr";
+    case CommandKind::ArithCommand: return "arith-command";
+    case CommandKind::Time: return "time";
   }
   return "unknown";
 }
@@ -99,6 +107,10 @@ const char* redirection_kind_name(RedirectionKind kind) noexcept {
     case RedirectionKind::HereDocumentStrip: return "here-document-strip";
     case RedirectionKind::DupInput: return "dup-input";
     case RedirectionKind::DupOutput: return "dup-output";
+    case RedirectionKind::HereString: return "here-string";
+    case RedirectionKind::OutputClobber: return "output-clobber";
+    case RedirectionKind::OutputAndStderr: return "output-and-stderr";
+    case RedirectionKind::AppendAndStderr: return "append-and-stderr";
   }
   return "unknown";
 }

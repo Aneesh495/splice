@@ -86,6 +86,43 @@ bool PlanBuilder::build_redirection(const syntax::Redirection& redirection,
       action.kind = DescriptorActionKind::HereDocument;
       action.body = redirection.here_body;
       break;
+    case syntax::RedirectionKind::HereString:
+      action.kind = DescriptorActionKind::HereDocument;
+      action.body = value + "\n";
+      break;
+    case syntax::RedirectionKind::OutputClobber:
+      action.kind = DescriptorActionKind::Open;
+      action.flags = O_WRONLY | O_CREAT | O_TRUNC;
+      action.path = value;
+      break;
+    case syntax::RedirectionKind::OutputAndStderr: {
+      action.kind = DescriptorActionKind::Open;
+      action.flags = O_WRONLY | O_CREAT | O_TRUNC;
+      action.path = value;
+      action.fd = 1;
+      plan.descriptors.push_back(action);
+      DescriptorAction dup_err;
+      dup_err.fd = 2;
+      dup_err.kind = DescriptorActionKind::Duplicate;
+      dup_err.target_fd = 1;
+      dup_err.span = redirection.span;
+      plan.descriptors.push_back(std::move(dup_err));
+      return true;
+    }
+    case syntax::RedirectionKind::AppendAndStderr: {
+      action.kind = DescriptorActionKind::Append;
+      action.flags = O_WRONLY | O_CREAT | O_APPEND;
+      action.path = value;
+      action.fd = 1;
+      plan.descriptors.push_back(action);
+      DescriptorAction dup_err;
+      dup_err.fd = 2;
+      dup_err.kind = DescriptorActionKind::Duplicate;
+      dup_err.target_fd = 1;
+      dup_err.span = redirection.span;
+      plan.descriptors.push_back(std::move(dup_err));
+      return true;
+    }
   }
   plan.descriptors.push_back(std::move(action));
   return true;
