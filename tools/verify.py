@@ -86,6 +86,7 @@ def main() -> int:
             failures.append("evidence commit contains non-evidence source changes")
     if manifest.get("source_commit") != source_commit:
         failures.append("manifest source commit does not match acceptance source commit")
+    for relative, expected in manifest.get("files", {}).items():
         path = ROOT / relative
         if not path.exists():
             failures.append(f"missing artifact: {relative}")

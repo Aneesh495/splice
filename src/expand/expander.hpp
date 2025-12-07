@@ -26,6 +26,8 @@ struct ExpansionResult {
 
 using CommandSubstitution = std::function<std::string(const std::string&, int&)>;
 
+bool evaluate_arithmetic(std::string_view expression, long long& value, ShellState* state = nullptr);
+
 class Expander {
  public:
   explicit Expander(ShellState& state, CommandSubstitution substitution = {})
@@ -37,6 +39,7 @@ class Expander {
                                       ExpansionContext context = ExpansionContext::CommandWord) const;
   [[nodiscard]] std::string parameter(std::string_view expression, bool& defined,
                                       std::string& error) const;
+  [[nodiscard]] std::vector<std::string> brace_expand(std::string_view word) const;
 
  private:
   [[nodiscard]] std::string expand_fragment(std::string_view fragment, bool quoted,

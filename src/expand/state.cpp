@@ -24,6 +24,10 @@ ShellState::ShellState() : shell_pid(static_cast<long long>(getpid())) {
 }
 
 const Variable* ShellState::find(std::string_view name) const {
+  for (auto it = function_frames.rbegin(); it != function_frames.rend(); ++it) {
+    const auto local_it = it->local_vars.find(std::string(name));
+    if (local_it != it->local_vars.end()) return &local_it->second;
+  }
   const auto iterator = variables_.find(std::string(name));
   return iterator == variables_.end() ? nullptr : &iterator->second;
 }
@@ -46,6 +50,15 @@ bool ShellState::is_readonly(std::string_view name) const {
 }
 
 bool ShellState::set(std::string name, std::string value, bool exported) {
+  for (auto it = function_frames.rbegin(); it != function_frames.rend(); ++it) {
+    auto local_it = it->local_vars.find(name);
+    if (local_it != it->local_vars.end()) {
+      if (local_it->second.readonly) return false;
+      local_it->second.value = std::move(value);
+      local_it->second.exported = local_it->second.exported || exported;
+      return true;
+    }
+  }
   auto iterator = variables_.find(name);
   if (iterator != variables_.end() && iterator->second.readonly) return false;
   if (iterator == variables_.end()) {
@@ -55,6 +68,93 @@ bool ShellState::set(std::string name, std::string value, bool exported) {
     iterator->second.exported = iterator->second.exported || exported;
   }
   return true;
+}
+
+void ShellState::push_function_frame(std::vector<std::string> new_positional) {
+  FunctionFrame frame;
+  frame.positional = std::move(positional);
+  positional = std::move(new_positional);
+  function_frames.push_back(std::move(frame));
+}
+
+void ShellState::pop_function_frame() {
+  if (function_frames.empty()) return;
+  positional = std::move(function_frames.back().positional);
+  function_frames.pop_back();
+}
+
+bool ShellState::set_local(std::string name, std::string value) {
+  if (function_frames.empty()) return set(std::move(name), std::move(value));
+  auto& frame = function_frames.back();
+  auto it = frame.local_vars.find(name);
+  if (it != frame.local_vars.end() && it->second.readonly) return false;
+  if (it == frame.local_vars.end()) {
+    frame.local_vars.emplace(std::move(name), Variable{std::move(value), false, false});
+  } else {
+    it->second.value = std::move(value);
+  }
+  return true;
+}
+
+bool ShellState::set_array_element(std::string_view name, std::size_t index, std::string value) {
+  std::string key(name);
+  auto& arr = arrays[key];
+  if (index >= arr.size()) arr.resize(index + 1);
+  arr[index] = value;
+  if (index == 0) set(key, std::move(value));
+  return true;
+}
+
+std::string ShellState::get_array_element(std::string_view name, std::size_t index) const {
+  const auto it = arrays.find(std::string(name));
+  if (it == arrays.end()) {
+    if (index == 0) return value(name);
+    return {};
+  }
+  if (index < it->second.size()) return it->second[index];
+  return {};
+}
+
+bool ShellState::set_array(std::string name, std::vector<std::string> values) {
+  if (!values.empty()) set(name, values.front());
+  else set(name, "");
+  arrays[std::move(name)] = std::move(values);
+  return true;
+}
+
+const std::vector<std::string>* ShellState::get_array(std::string_view name) const {
+  const auto it = arrays.find(std::string(name));
+  return it == arrays.end() ? nullptr : &it->second;
+}
+
+bool ShellState::is_array(std::string_view name) const {
+  return arrays.find(std::string(name)) != arrays.end();
+}
+
+std::size_t ShellState::array_length(std::string_view name) const {
+  const auto it = arrays.find(std::string(name));
+  return it == arrays.end() ? (is_set(name) ? 1 : 0) : it->second.size();
+}
+
+bool ShellState::set_assoc_element(std::string_view name, std::string_view key, std::string value) {
+  assoc_arrays[std::string(name)][std::string(key)] = std::move(value);
+  return true;
+}
+
+std::string ShellState::get_assoc_element(std::string_view name, std::string_view key) const {
+  const auto it = assoc_arrays.find(std::string(name));
+  if (it == assoc_arrays.end()) return {};
+  const auto item = it->second.find(std::string(key));
+  return item == it->second.end() ? std::string{} : item->second;
+}
+
+const std::unordered_map<std::string, std::string>* ShellState::get_assoc_array(std::string_view name) const {
+  const auto it = assoc_arrays.find(std::string(name));
+  return it == assoc_arrays.end() ? nullptr : &it->second;
+}
+
+bool ShellState::is_assoc(std::string_view name) const {
+  return assoc_arrays.find(std::string(name)) != assoc_arrays.end();
 }
 
 bool ShellState::unset(std::string_view name) {
