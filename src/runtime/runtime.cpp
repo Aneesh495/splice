@@ -7,6 +7,12 @@
 #include <csignal>
 #include <cstring>
 #include <fcntl.h>
+#include <fnmatch.h>
+#include <regex.h>
+#include <spawn.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
@@ -20,7 +26,9 @@
 
 namespace splice::runtime {
 
-int Runtime::signal_write_fd_ = -1;namespace {
+int Runtime::signal_write_fd_ = -1;
+
+namespace {
 
 struct ChildError {
   int operation{0};
@@ -241,6 +249,18 @@ void Runtime::restore_parent_descriptors(const std::vector<int>& saved) {
   }
 }
 
+int Runtime::apply_parent_redirections(const std::vector<syntax::Redirection>& redirections,
+                                       std::vector<int>& saved) {
+  syntax::SimpleCommand simple;
+  simple.redirections = redirections;
+  syntax::Command cmd;
+  cmd.kind = syntax::CommandKind::Simple;
+  cmd.simple = simple;
+  const auto plan = planner_.build(std::make_shared<syntax::Command>(cmd));
+  if (!plan.valid() || plan.stages.empty()) return 0;
+  return apply_parent_descriptors(plan.stages.front(), saved);
+}
+
 int Runtime::child_setup_and_exec(const plan::PlannedCommand& command,
                                   int input_fd, int output_fd, int error_fd,
                                   int error_pipe) {
@@ -266,7 +286,7 @@ int Runtime::child_setup_and_exec(const plan::PlannedCommand& command,
   for (const auto& [name, value] : command.assignments) setenv(name.c_str(), value.c_str(), 1);
   if (command.argv.empty()) _exit(0);
   if (builtins::is_builtin(command.argv.front())) {
-    builtins::Context context{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}};
+    builtins::Context context{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}, {}};
     const auto result = builtins::run(command.argv, context);
     _exit(result.status);
   }
@@ -322,11 +342,39 @@ int Runtime::execute_parent_builtin(const plan::PlannedCommand& command) {
                             },
                             [this](const std::vector<std::string>& argv) {
                               return job_control(argv);
+                            },
+                            [this](const std::string& script) {
+                              return execute_string(script);
                             }};
   const auto result = builtins::run(command.argv, context);
   restore_parent_descriptors(saved);
   if (result.request_exit) exit_requested_ = true;
   return result.status;
+}
+
+int Runtime::execute_function(const plan::PlannedCommand& command, const syntax::CommandPtr& func_body) {
+  std::vector<int> saved;
+  if (apply_parent_descriptors(command, saved) != 0) {
+    restore_parent_descriptors(saved);
+    report_error("redirection failed for function call");
+    return 1;
+  }
+  std::vector<std::string> new_positional;
+  for (std::size_t i = 1; i < command.argv.size(); ++i) {
+    new_positional.push_back(command.argv[i]);
+  }
+  state_.push_function_frame(std::move(new_positional));
+  for (const auto& [vname, vval] : command.assignments) {
+    state_.set_local(vname, vval);
+  }
+  int status = execute_command(func_body);
+  if (state_.return_requested) {
+    status = state_.return_status;
+    state_.return_requested = false;
+  }
+  state_.pop_function_frame();
+  restore_parent_descriptors(saved);
+  return status;
 }
 
 int Runtime::job_control(const std::vector<std::string>& argv) {
@@ -461,6 +509,10 @@ void Runtime::reap_one(pid_t pid, int status) {
         if (*iterator != 0) { job->status = *iterator; break; }
       }
     }
+    state_.pipe_status = job->stage_statuses;
+    std::vector<std::string> pipe_strs;
+    for (int s : job->stage_statuses) pipe_strs.push_back(std::to_string(s));
+    state_.set_array("PIPESTATUS", std::move(pipe_strs));
   }
 }
 
@@ -487,6 +539,105 @@ int Runtime::wait_foreground(Job& job) {
   }
   if (interactive_ && job.process_group > 0) tcsetpgrp(shell_terminal_, getpgrp());
   return job.status;
+}
+
+bool Runtime::try_fast_spawn(const plan::PlannedCommand& command, int input_fd,
+                             int output_fd, int error_fd, pid_t group, pid_t& pid) {
+  if (command.argv.empty()) return false;
+  if (builtins::is_builtin(command.argv.front())) return false;
+  if (state_.functions.find(command.argv.front()) != state_.functions.end()) return false;
+
+  const std::string executable = resolve_executable(command.argv.front());
+  if (executable.empty()) return false;
+
+  posix_spawn_file_actions_t file_actions;
+  if (posix_spawn_file_actions_init(&file_actions) != 0) return false;
+
+  posix_spawnattr_t attr;
+  if (posix_spawnattr_init(&attr) != 0) {
+    posix_spawn_file_actions_destroy(&file_actions);
+    return false;
+  }
+
+  short flags = POSIX_SPAWN_SETPGROUP;
+  posix_spawnattr_setflags(&attr, flags);
+  posix_spawnattr_setpgroup(&attr, group > 0 ? group : 0);
+
+  if (input_fd != STDIN_FILENO && input_fd >= 0) {
+    posix_spawn_file_actions_adddup2(&file_actions, input_fd, STDIN_FILENO);
+  }
+  if (output_fd != STDOUT_FILENO && output_fd >= 0) {
+    posix_spawn_file_actions_adddup2(&file_actions, output_fd, STDOUT_FILENO);
+  }
+  if (error_fd != STDERR_FILENO && error_fd >= 0) {
+    posix_spawn_file_actions_adddup2(&file_actions, error_fd, STDERR_FILENO);
+  }
+
+  std::vector<int> pipe_heredocs_to_close;
+  bool ok = true;
+  for (const auto& action : command.descriptors) {
+    if (action.kind == plan::DescriptorActionKind::Open || action.kind == plan::DescriptorActionKind::Append) {
+      int open_flags = action.flags;
+      if (state_.option(expand::ShellOption::Noclobber) && action.kind == plan::DescriptorActionKind::Open) {
+        open_flags |= O_EXCL;
+      }
+      if (posix_spawn_file_actions_addopen(&file_actions, action.fd, action.path.c_str(), open_flags, 0666) != 0) {
+        ok = false;
+        break;
+      }
+    } else if (action.kind == plan::DescriptorActionKind::Duplicate) {
+      if (posix_spawn_file_actions_adddup2(&file_actions, action.target_fd, action.fd) != 0) {
+        ok = false;
+        break;
+      }
+    } else if (action.kind == plan::DescriptorActionKind::Close) {
+      if (posix_spawn_file_actions_addclose(&file_actions, action.fd) != 0) {
+        ok = false;
+        break;
+      }
+    } else if (action.kind == plan::DescriptorActionKind::HereDocument) {
+      int hpipe[2];
+      if (pipe(hpipe) != 0) { ok = false; break; }
+      std::size_t offset = 0;
+      while (offset < action.body.size()) {
+        const ssize_t w = write(hpipe[1], action.body.data() + offset, action.body.size() - offset);
+        if (w <= 0) break;
+        offset += static_cast<std::size_t>(w);
+      }
+      close(hpipe[1]);
+      posix_spawn_file_actions_adddup2(&file_actions, hpipe[0], action.fd);
+      posix_spawn_file_actions_addclose(&file_actions, hpipe[0]);
+      pipe_heredocs_to_close.push_back(hpipe[0]);
+    }
+  }
+
+  if (!ok) {
+    for (int pfd : pipe_heredocs_to_close) close(pfd);
+    posix_spawnattr_destroy(&attr);
+    posix_spawn_file_actions_destroy(&file_actions);
+    return false;
+  }
+
+  std::vector<char*> argv;
+  argv.reserve(command.argv.size() + 1);
+  for (const auto& a : command.argv) argv.push_back(const_cast<char*>(a.c_str()));
+  argv.push_back(nullptr);
+
+  const auto environment = environment_for(command);
+  std::vector<char*> envp;
+  envp.reserve(environment.size() + 1);
+  for (const auto& e : environment) envp.push_back(const_cast<char*>(e.c_str()));
+  envp.push_back(nullptr);
+
+  pid_t spawned_pid = -1;
+  int err = posix_spawn(&spawned_pid, executable.c_str(), &file_actions, &attr, argv.data(), envp.data());
+  for (int pfd : pipe_heredocs_to_close) close(pfd);
+  posix_spawnattr_destroy(&attr);
+  posix_spawn_file_actions_destroy(&file_actions);
+
+  if (err != 0) return false;
+  pid = spawned_pid;
+  return true;
 }
 
 int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
@@ -538,6 +689,18 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
   for (std::size_t index = 0; index < plan.stages.size(); ++index) {
     const int input = index == 0 ? STDIN_FILENO : pipes[index - 1][0];
     const int output = index + 1 == plan.stages.size() ? STDOUT_FILENO : pipes[index][1];
+    const int child_error = plan.stages[index].merge_stderr ? output : STDERR_FILENO;
+
+    pid_t fast_pid = -1;
+    if (try_fast_spawn(plan.stages[index], input, output, child_error, group, fast_pid)) {
+      if (group < 0) group = fast_pid;
+      job.processes.push_back(ProcessId{fast_pid});
+      if (index == 0) job.process_group = group;
+      if (index > 0) close(pipes[index - 1][0]);
+      if (index + 1 < plan.stages.size()) close(pipes[index][1]);
+      continue;
+    }
+
     pid_t pid = fork();
     if (pid == 0) {
       signal(SIGTTOU, SIG_DFL);
@@ -551,7 +714,6 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
         if (static_cast<int>(close_index) != static_cast<int>(index) - 1) close_if_open(pipes[close_index][0]);
         if (static_cast<int>(close_index) != static_cast<int>(index)) close_if_open(pipes[close_index][1]);
       }
-      const int child_error = plan.stages[index].merge_stderr ? output : STDERR_FILENO;
       (void)child_setup_and_exec(plan.stages[index], input, output, child_error, error_write);
       _exit(125);
     }
@@ -577,10 +739,12 @@ int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
     setpgid(pid, group);
     job.processes.push_back(ProcessId{pid});
     if (index == 0) job.process_group = group;
+    if (index > 0) close(pipes[index - 1][0]);
+    if (index + 1 < plan.stages.size()) close(pipes[index][1]);
   }
   for (auto& pair : pipes) {
-    close(pair[0]);
-    close(pair[1]);
+    close_if_open(pair[0]);
+    close_if_open(pair[1]);
   }
   close(error_write);
   job.process_group = group;
@@ -611,9 +775,18 @@ int Runtime::execute_plan(const plan::ExecutionPlan& plan) {
     report_error(plan.error.empty() ? "invalid execution plan" : plan.error);
     return 2;
   }
-  if (plan.stages.size() == 1 && !plan.background &&
-      (plan.stages.front().argv.empty() || builtins::is_builtin(plan.stages.front().argv.front()))) {
-    return execute_parent_builtin(plan.stages.front());
+  if (plan.stages.size() == 1 && !plan.background) {
+    if (plan.stages.front().argv.empty()) {
+      return execute_parent_builtin(plan.stages.front());
+    }
+    const std::string& name = plan.stages.front().argv.front();
+    const auto func_it = state_.functions.find(name);
+    if (func_it != state_.functions.end()) {
+      return execute_function(plan.stages.front(), func_it->second);
+    }
+    if (builtins::is_builtin(name)) {
+      return execute_parent_builtin(plan.stages.front());
+    }
   }
   return launch_pipeline(plan);
 }
@@ -655,24 +828,279 @@ int Runtime::execute_sequence(const syntax::CommandPtr& command) {
   int status = 0;
   for (const auto& child : command->children) {
     status = execute_command(child);
-    if (exit_requested_) break;
+    if (exit_requested_ || state_.return_requested) break;
+    if (state_.break_levels > 0 || state_.continue_levels > 0) break;
     if (state_.option(expand::ShellOption::Errexit) && status != 0) break;
   }
+  return status;
+}
+
+int Runtime::execute_if(const syntax::CommandPtr& command) {
+  if (!command->if_cmd) return 0;
+  bool matched = false;
+  int status = 0;
+  for (const auto& clause : command->if_cmd->clauses) {
+    const int cond_status = execute_command(clause.condition);
+    if (cond_status == 0) {
+      status = execute_command(clause.body);
+      matched = true;
+      break;
+    }
+  }
+  if (!matched && command->if_cmd->else_body) {
+    status = execute_command(command->if_cmd->else_body);
+  }
+  return status;
+}
+
+int Runtime::execute_for(const syntax::CommandPtr& command) {
+  if (!command->for_cmd) return 0;
+  int status = 0;
+  if (command->for_cmd->is_arithmetic) {
+    if (!command->for_cmd->arith_init.empty()) {
+      long long val = 0;
+      expand::evaluate_arithmetic(command->for_cmd->arith_init, val, &state_);
+    }
+    while (true) {
+      if (!command->for_cmd->arith_cond.empty()) {
+        long long cond_val = 0;
+        expand::evaluate_arithmetic(command->for_cmd->arith_cond, cond_val, &state_);
+        if (cond_val == 0) break;
+      }
+      if (command->for_cmd->body) {
+        status = execute_command(command->for_cmd->body);
+      }
+      if (exit_requested_ || state_.return_requested) break;
+      if (state_.break_levels > 0) {
+        --state_.break_levels;
+        break;
+      }
+      if (state_.continue_levels > 0) {
+        --state_.continue_levels;
+        if (state_.continue_levels > 0) break;
+      }
+      if (!command->for_cmd->arith_step.empty()) {
+        long long step_val = 0;
+        expand::evaluate_arithmetic(command->for_cmd->arith_step, step_val, &state_);
+      }
+    }
+    return status;
+  }
+
+  std::vector<std::string> words;
+  for (const auto& w : command->for_cmd->words) {
+    auto res = expander_.word(w);
+    for (const auto& f : res.fields) words.push_back(f.value);
+  }
+
+  for (const auto& item : words) {
+    state_.set(command->for_cmd->name, item);
+    if (command->for_cmd->body) {
+      status = execute_command(command->for_cmd->body);
+    }
+    if (exit_requested_ || state_.return_requested) break;
+    if (state_.break_levels > 0) {
+      --state_.break_levels;
+      break;
+    }
+    if (state_.continue_levels > 0) {
+      --state_.continue_levels;
+      if (state_.continue_levels > 0) break;
+    }
+  }
+  return status;
+}
+
+int Runtime::execute_while(const syntax::CommandPtr& command) {
+  if (!command->while_cmd) return 0;
+  const bool until = command->while_cmd->until;
+  int status = 0;
+  while (true) {
+    const int cond_status = execute_command(command->while_cmd->condition);
+    if (exit_requested_ || state_.return_requested) break;
+    if ((cond_status == 0) == until) break;
+    if (command->while_cmd->body) {
+      status = execute_command(command->while_cmd->body);
+    }
+    if (exit_requested_ || state_.return_requested) break;
+    if (state_.break_levels > 0) {
+      --state_.break_levels;
+      break;
+    }
+    if (state_.continue_levels > 0) {
+      --state_.continue_levels;
+      if (state_.continue_levels > 0) break;
+    }
+  }
+  return status;
+}
+
+int Runtime::execute_case(const syntax::CommandPtr& command) {
+  if (!command->case_cmd) return 0;
+  auto word_res = expander_.word(command->case_cmd->word);
+  const std::string target = word_res.fields.empty() ? "" : word_res.fields.front().value;
+  int status = 0;
+  for (const auto& item : command->case_cmd->items) {
+    bool matched = false;
+    for (const auto& pat_word : item.patterns) {
+      auto pat_res = expander_.word(pat_word);
+      const std::string pat = pat_res.fields.empty() ? "" : pat_res.fields.front().value;
+      if (fnmatch(pat.c_str(), target.c_str(), 0) == 0) {
+        matched = true;
+        break;
+      }
+    }
+    if (matched) {
+      if (item.body) status = execute_command(item.body);
+      break;
+    }
+  }
+  return status;
+}
+
+int Runtime::execute_cond(const syntax::CondNodePtr& cond) {
+  if (cond == nullptr) return 1;
+  if (cond->op == syntax::CondOp::Not) {
+    return execute_cond(cond->left_child) == 0 ? 1 : 0;
+  }
+  if (cond->op == syntax::CondOp::And) {
+    return (execute_cond(cond->left_child) == 0 && execute_cond(cond->right_child) == 0) ? 0 : 1;
+  }
+  if (cond->op == syntax::CondOp::Or) {
+    return (execute_cond(cond->left_child) == 0 || execute_cond(cond->right_child) == 0) ? 0 : 1;
+  }
+  if (cond->op == syntax::CondOp::Unary) {
+    auto res = expander_.word(cond->left);
+    const std::string arg = res.fields.empty() ? "" : res.fields.front().value;
+    builtins::Context ctx{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}, {}};
+    return builtins::run({"test", cond->op_text, arg}, ctx).status;
+  }
+  if (cond->op == syntax::CondOp::Binary) {
+    auto left_res = expander_.word(cond->left);
+    auto right_res = expander_.word(cond->right);
+    const std::string left = left_res.fields.empty() ? "" : left_res.fields.front().value;
+    const std::string right = right_res.fields.empty() ? "" : right_res.fields.front().value;
+
+    if (cond->op_text == "=~") {
+      regex_t reg{};
+      if (regcomp(&reg, right.c_str(), REG_EXTENDED) != 0) return 2;
+      const int match = regexec(&reg, left.c_str(), 0, nullptr, 0);
+      regfree(&reg);
+      return match == 0 ? 0 : 1;
+    }
+    if (cond->op_text == "==" || cond->op_text == "=") {
+      return fnmatch(right.c_str(), left.c_str(), 0) == 0 ? 0 : 1;
+    }
+    if (cond->op_text == "!=") {
+      return fnmatch(right.c_str(), left.c_str(), 0) != 0 ? 0 : 1;
+    }
+    builtins::Context ctx{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}, {}};
+    return builtins::run({"test", left, cond->op_text, right}, ctx).status;
+  }
+  return 1;
+}
+
+int Runtime::execute_arith_command(const syntax::CommandPtr& command) {
+  long long result = 0;
+  expand::evaluate_arithmetic(command->arith_expr, result, &state_);
+  return result != 0 ? 0 : 1;
+}
+
+int Runtime::execute_time(const syntax::CommandPtr& command) {
+  if (!command->time_cmd || !command->time_cmd->command) return 0;
+  const auto start = std::chrono::steady_clock::now();
+  struct rusage r_start{};
+  getrusage(RUSAGE_CHILDREN, &r_start);
+
+  const int status = execute_command(command->time_cmd->command);
+
+  const auto end = std::chrono::steady_clock::now();
+  struct rusage r_end{};
+  getrusage(RUSAGE_CHILDREN, &r_end);
+
+  const auto real_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  const long long user_ms = (r_end.ru_utime.tv_sec - r_start.ru_utime.tv_sec) * 1000 +
+                            (r_end.ru_utime.tv_usec - r_start.ru_utime.tv_usec) / 1000;
+  const long long sys_ms = (r_end.ru_stime.tv_sec - r_start.ru_stime.tv_sec) * 1000 +
+                           (r_end.ru_stime.tv_usec - r_start.ru_stime.tv_usec) / 1000;
+
+  auto fmt = [](long long total_ms) {
+    long long m = total_ms / 60000;
+    long long s = (total_ms % 60000) / 1000;
+    long long ms = total_ms % 1000;
+    std::ostringstream ss;
+    ss << m << "m" << s << "." << std::setfill('0') << std::setw(3) << ms << "s";
+    return ss.str();
+  };
+
+  std::string output = "real\t" + fmt(real_ms) + "\nuser\t" + fmt(user_ms) + "\nsys\t" + fmt(sys_ms) + "\n";
+  ::write(STDERR_FILENO, output.data(), output.size());
   return status;
 }
 
 int Runtime::execute_command(const syntax::CommandPtr& command) {
   reap_nonblocking();
   if (command == nullptr) return 2;
-  if (command->kind == syntax::CommandKind::Sequence) return execute_sequence(command);
-  if (command->kind == syntax::CommandKind::AndOr) return execute_and_or(command);
-  if (command->kind == syntax::CommandKind::Group) {
-    return command->children.empty() ? 0 : execute_command(command->children.front());
+
+  std::vector<int> saved_redirs;
+  if (!command->redirections.empty()) {
+    (void)apply_parent_redirections(command->redirections, saved_redirs);
   }
-  if (command->kind == syntax::CommandKind::Subshell) return execute_subshell(command);
-  const auto plan = planner_.build(command);
-  int status = execute_plan(plan);
-  if (plan.negated) status = status == 0 ? 1 : 0;
+
+  int status = 0;
+  switch (command->kind) {
+    case syntax::CommandKind::Sequence:
+      status = execute_sequence(command);
+      break;
+    case syntax::CommandKind::AndOr:
+      status = execute_and_or(command);
+      break;
+    case syntax::CommandKind::Group:
+      status = command->children.empty() ? 0 : execute_sequence(command);
+      break;
+    case syntax::CommandKind::Subshell:
+      status = execute_subshell(command);
+      break;
+    case syntax::CommandKind::If:
+      status = execute_if(command);
+      break;
+    case syntax::CommandKind::For:
+      status = execute_for(command);
+      break;
+    case syntax::CommandKind::While:
+    case syntax::CommandKind::Until:
+      status = execute_while(command);
+      break;
+    case syntax::CommandKind::Case:
+      status = execute_case(command);
+      break;
+    case syntax::CommandKind::CondExpr:
+      status = execute_cond(command->cond_expr);
+      break;
+    case syntax::CommandKind::ArithCommand:
+      status = execute_arith_command(command);
+      break;
+    case syntax::CommandKind::Time:
+      status = execute_time(command);
+      break;
+    case syntax::CommandKind::Function:
+      if (!command->children.empty()) {
+        state_.functions[command->name] = command->children.front();
+      }
+      status = 0;
+      break;
+    default: {
+      const auto plan = planner_.build(command);
+      status = execute_plan(plan);
+      if (plan.negated) status = status == 0 ? 1 : 0;
+      break;
+    }
+  }
+
+  if (!saved_redirs.empty()) {
+    restore_parent_descriptors(saved_redirs);
+  }
+
   state_.last_status = status;
   return status;
 }
@@ -686,6 +1114,16 @@ int Runtime::execute(const syntax::Program& program) {
   state_.last_status = status;
   reap_nonblocking();
   return status;
+}
+
+int Runtime::execute_string(const std::string& script) {
+  source::SourceBuffer source(script, "<eval>");
+  syntax::Lexer lexer(source);
+  auto lexed = lexer.run();
+  syntax::Parser parser(source, std::move(lexed.tokens));
+  auto parsed = parser.run();
+  if (lexed.diagnostics.has_error() || parsed.diagnostics.has_error()) return 2;
+  return execute(parsed.program);
 }
 
 std::string Runtime::substitute(const std::string& source_text, int& status) {

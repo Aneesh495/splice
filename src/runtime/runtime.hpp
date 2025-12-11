@@ -45,6 +45,7 @@ class Runtime {
 
   [[nodiscard]] int execute(const syntax::Program& program);
   [[nodiscard]] int execute_command(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_string(const std::string& script);
   [[nodiscard]] std::string substitute(const std::string& source, int& status);
   void reap_nonblocking();
   [[nodiscard]] const std::map<int, Job>& jobs() const noexcept { return jobs_; }
@@ -54,6 +55,18 @@ class Runtime {
   [[nodiscard]] int execute_sequence(const syntax::CommandPtr& command);
   [[nodiscard]] int execute_and_or(const syntax::CommandPtr& command);
   [[nodiscard]] int execute_subshell(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_if(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_for(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_while(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_case(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_cond(const syntax::CondNodePtr& cond);
+  [[nodiscard]] int execute_arith_command(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_time(const syntax::CommandPtr& command);
+  [[nodiscard]] int execute_function(const plan::PlannedCommand& command, const syntax::CommandPtr& func);
+  [[nodiscard]] int apply_parent_redirections(const std::vector<syntax::Redirection>& redirections,
+                                              std::vector<int>& saved);
+  [[nodiscard]] bool try_fast_spawn(const plan::PlannedCommand& command, int input_fd,
+                                    int output_fd, int error_fd, pid_t group, pid_t& pid);
   [[nodiscard]] int execute_plan(const plan::ExecutionPlan& plan);
   [[nodiscard]] int execute_parent_builtin(const plan::PlannedCommand& command);
   [[nodiscard]] int launch_pipeline(const plan::ExecutionPlan& plan);

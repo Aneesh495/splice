@@ -16,6 +16,7 @@ struct Context {
   bool parent{false};
   std::function<int(const std::vector<std::string>&)> nested;
   std::function<int(const std::vector<std::string>&)> job_control;
+  std::function<int(const std::string&)> eval_script;
 };
 
 struct Result {
