@@ -196,7 +196,7 @@ int run_interactive(const Options& options) {
     return 2;
   }
   runtime::Runtime runtime(state, options.trace_path.empty() ? nullptr : &trace);
-  interactive::LineEditor editor(STDIN_FILENO, STDOUT_FILENO, history_store);
+  interactive::LineEditor editor(STDIN_FILENO, STDOUT_FILENO, history_store, &state);
   while (true) {
     std::string line;
     const std::string prompt = "splice[" + std::to_string(state.last_status) + "]$ ";

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "history/history.hpp"
+#include "expand/state.hpp"
 
 #include <string>
 #include <vector>
@@ -24,7 +25,8 @@ class RawTerminal {
 
 class LineEditor {
  public:
-  LineEditor(int input_fd, int output_fd, history::Store& history);
+  LineEditor(int input_fd, int output_fd, history::Store& history,
+             const expand::ShellState* state = nullptr);
   ~LineEditor();
 
   [[nodiscard]] bool read_line(const std::string& prompt, std::string& line);
@@ -40,6 +42,7 @@ class LineEditor {
   int input_fd_;
   int output_fd_;
   history::Store& history_;
+  const expand::ShellState* state_{nullptr};
   RawTerminal terminal_;
   std::vector<history::Entry> entries_;
   std::size_t history_index_{0};

@@ -1,4 +1,5 @@
 #include "interactive/editor.hpp"
+#include "interactive/completion.hpp"
 
 #include <cerrno>
 #include <cstring>
@@ -37,8 +38,9 @@ void RawTerminal::restore() {
   enabled_ = false;
 }
 
-LineEditor::LineEditor(int input_fd, int output_fd, history::Store& history)
-    : input_fd_(input_fd), output_fd_(output_fd), history_(history), terminal_(input_fd) {
+LineEditor::LineEditor(int input_fd, int output_fd, history::Store& history,
+                       const expand::ShellState* state)
+    : input_fd_(input_fd), output_fd_(output_fd), history_(history), state_(state), terminal_(input_fd) {
   (void)history_.open();
   entries_ = history_.entries();
   history_index_ = entries_.size();
@@ -110,6 +112,31 @@ bool LineEditor::read_line(const std::string& prompt, std::string& line) {
         return false;
       }
       buffer.erase(cursor, 1);
+    } else if (value == '\t' && state_ != nullptr) {
+      Completer completer(*state_);
+      const auto comp_result = completer.complete(buffer, cursor);
+      if (comp_result.is_unique()) {
+        const auto& cand = comp_result.candidates.front();
+        buffer.replace(comp_result.replacement_start, comp_result.replacement_length, cand.text);
+        cursor = comp_result.replacement_start + cand.text.size();
+        if (cand.kind != CompletionKind::Directory) {
+          buffer.insert(cursor, " ");
+          ++cursor;
+        }
+      } else if (!comp_result.empty()) {
+        if (comp_result.common_prefix.size() > comp_result.replacement_length) {
+          buffer.replace(comp_result.replacement_start, comp_result.replacement_length, comp_result.common_prefix);
+          cursor = comp_result.replacement_start + comp_result.common_prefix.size();
+        } else {
+          std::string display = "\r\n";
+          for (std::size_t i = 0; i < comp_result.candidates.size(); ++i) {
+            if (i > 0) display += "  ";
+            display += comp_result.candidates[i].display;
+          }
+          display += "\r\n";
+          ::write(output_fd_, display.data(), display.size());
+        }
+      }
     } else if (value == 127 || value == 8) {
       if (cursor > 0) {
         buffer.erase(cursor - 1, 1);

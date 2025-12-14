@@ -32,6 +32,7 @@ add_executable(splice
   src/history/history.cpp
   src/inspect/trace.cpp
   src/interactive/editor.cpp
+  src/interactive/completion.cpp
   src/task/runner.cpp
 )
 target_link_libraries(splice PRIVATE splice_options)
