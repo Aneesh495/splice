@@ -1,6 +1,7 @@
 #include "source/source.hpp"
 #include "plan/plan.hpp"
 #include "inspect/trace.hpp"
+#include "inspect/replay.hpp"
 #include "interactive/editor.hpp"
 #include "history/history.hpp"
 #include "runtime/runtime.hpp"
@@ -30,6 +31,8 @@ struct Options {
   bool dump_ast{false};
   bool dump_plan{false};
   std::string trace_path;
+  std::string replay_path;
+  std::string html_path;
   std::string command;
   std::string script;
   std::string profile{"posix"};
@@ -78,6 +81,18 @@ bool parse_options(int argc, char** argv, Options& options, std::ostream& errors
         return false;
       }
       options.trace_path = argv[++index];
+    } else if (argument == "--replay") {
+      if (index + 1 >= argc) {
+        errors << "splice: --replay requires a trace file\n";
+        return false;
+      }
+      options.replay_path = argv[++index];
+    } else if (argument == "--html") {
+      if (index + 1 >= argc) {
+        errors << "splice: --html requires an output path\n";
+        return false;
+      }
+      options.html_path = argv[++index];
     } else if (argument == "--version") {
       std::cout << kVersion << '\n';
       std::exit(EXIT_SUCCESS);
@@ -236,6 +251,26 @@ int main(int argc, char** argv) {
   if (argc > 1 && std::string_view(argv[1]) == "run") return run_task_cli(argc, argv);
   Options options;
   if (!parse_options(argc, argv, options, std::cerr)) return 2;
+
+  if (!options.replay_path.empty()) {
+    inspect::ReplayEngine engine(options.replay_path);
+    std::string error;
+    if (!engine.load(error)) {
+      std::cerr << "splice: " << error << '\n';
+      return 2;
+    }
+    if (!options.html_path.empty()) {
+      std::ofstream html_out(options.html_path);
+      if (!html_out.is_open()) {
+        std::cerr << "splice: cannot write HTML to " << options.html_path << '\n';
+        return 2;
+      }
+      html_out << engine.generate_html_report();
+    }
+    std::cout << engine.dump_summary_json() << '\n';
+    return 0;
+  }
+
   if (argc == 1 && isatty(STDIN_FILENO) != 0) return run_interactive(options);
 
   std::string text;

@@ -31,6 +31,7 @@ add_executable(splice
   src/runtime/runtime.cpp
   src/history/history.cpp
   src/inspect/trace.cpp
+  src/inspect/replay.cpp
   src/interactive/editor.cpp
   src/interactive/completion.cpp
   src/task/runner.cpp
