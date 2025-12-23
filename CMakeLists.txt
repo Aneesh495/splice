@@ -25,6 +25,7 @@ add_executable(splice
   src/syntax/parser.cpp
   src/syntax/token.cpp
   src/expand/expander.cpp
+  src/expand/pattern.cpp
   src/expand/state.cpp
   src/plan/plan.cpp
   src/builtins/builtins.cpp

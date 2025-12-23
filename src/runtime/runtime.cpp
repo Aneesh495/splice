@@ -2,6 +2,7 @@
 
 #include "syntax/lexer.hpp"
 #include "syntax/parser.hpp"
+#include "expand/pattern.hpp"
 
 #include <cerrno>
 #include <csignal>
@@ -23,6 +24,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+
+extern "C" char** environ;
 
 namespace splice::runtime {
 
@@ -623,14 +626,19 @@ bool Runtime::try_fast_spawn(const plan::PlannedCommand& command, int input_fd,
   for (const auto& a : command.argv) argv.push_back(const_cast<char*>(a.c_str()));
   argv.push_back(nullptr);
 
-  const auto environment = environment_for(command);
+  char** envp_ptr = ::environ;
+  std::vector<std::string> environment;
   std::vector<char*> envp;
-  envp.reserve(environment.size() + 1);
-  for (const auto& e : environment) envp.push_back(const_cast<char*>(e.c_str()));
-  envp.push_back(nullptr);
+  if (!command.assignments.empty()) {
+    environment = environment_for(command);
+    envp.reserve(environment.size() + 1);
+    for (const auto& e : environment) envp.push_back(const_cast<char*>(e.c_str()));
+    envp.push_back(nullptr);
+    envp_ptr = envp.data();
+  }
 
   pid_t spawned_pid = -1;
-  int err = posix_spawn(&spawned_pid, executable.c_str(), &file_actions, &attr, argv.data(), envp.data());
+  int err = posix_spawn(&spawned_pid, executable.c_str(), &file_actions, &attr, argv.data(), envp_ptr);
   for (int pfd : pipe_heredocs_to_close) close(pfd);
   posix_spawnattr_destroy(&attr);
   posix_spawn_file_actions_destroy(&file_actions);
@@ -641,6 +649,27 @@ bool Runtime::try_fast_spawn(const plan::PlannedCommand& command, int input_fd,
 }
 
 int Runtime::launch_pipeline(const plan::ExecutionPlan& plan) {
+  if (plan.stages.size() == 1) {
+    pid_t fast_pid = -1;
+    const int child_error = plan.stages.front().merge_stderr ? STDOUT_FILENO : STDERR_FILENO;
+    if (try_fast_spawn(plan.stages.front(), STDIN_FILENO, STDOUT_FILENO, child_error, -1, fast_pid)) {
+      Job job;
+      job.id = next_job_id_++;
+      job.background = plan.background;
+      job.process_group = fast_pid;
+      job.processes.push_back(ProcessId{fast_pid});
+      job.stage_statuses.assign(1, -1);
+      register_job(job);
+      if (trace_ != nullptr) (void)trace_->record("pipeline-registered", {{"job", std::to_string(job.id)}, {"pgid", std::to_string(fast_pid)}, {"stages", "1"}});
+      if (!plan.background && interactive_ && fast_pid > 0) tcsetpgrp(shell_terminal_, fast_pid);
+      if (plan.background) {
+        state_.last_background_pid = fast_pid;
+        return 0;
+      }
+      Job& stored = jobs_.at(job.id);
+      return wait_foreground(stored);
+    }
+  }
   sigset_t blocked{};
   sigset_t previous{};
   sigemptyset(&blocked);
@@ -940,20 +969,32 @@ int Runtime::execute_case(const syntax::CommandPtr& command) {
   auto word_res = expander_.word(command->case_cmd->word);
   const std::string target = word_res.fields.empty() ? "" : word_res.fields.front().value;
   int status = 0;
+  bool fallthrough = false;
   for (const auto& item : command->case_cmd->items) {
-    bool matched = false;
-    for (const auto& pat_word : item.patterns) {
-      auto pat_res = expander_.word(pat_word);
-      const std::string pat = pat_res.fields.empty() ? "" : pat_res.fields.front().value;
-      if (fnmatch(pat.c_str(), target.c_str(), 0) == 0) {
-        matched = true;
-        break;
+    bool matched = fallthrough;
+    if (!matched) {
+      for (const auto& pat_word : item.patterns) {
+        auto pat_res = expander_.word(pat_word);
+        const std::string pat = pat_res.fields.empty() ? "" : pat_res.fields.front().value;
+        if (expand::pattern_match(pat, target, true)) {
+          matched = true;
+          break;
+        }
       }
     }
     if (matched) {
       if (item.body) status = execute_command(item.body);
+      if (item.terminator == ";&") {
+        fallthrough = true;
+        continue;
+      }
+      if (item.terminator == ";;&") {
+        fallthrough = false;
+        continue;
+      }
       break;
     }
+    fallthrough = false;
   }
   return status;
 }
@@ -989,10 +1030,10 @@ int Runtime::execute_cond(const syntax::CondNodePtr& cond) {
       return match == 0 ? 0 : 1;
     }
     if (cond->op_text == "==" || cond->op_text == "=") {
-      return fnmatch(right.c_str(), left.c_str(), 0) == 0 ? 0 : 1;
+      return expand::pattern_match(right, left, true) ? 0 : 1;
     }
     if (cond->op_text == "!=") {
-      return fnmatch(right.c_str(), left.c_str(), 0) != 0 ? 0 : 1;
+      return !expand::pattern_match(right, left, true) ? 0 : 1;
     }
     builtins::Context ctx{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}, {}};
     return builtins::run({"test", left, cond->op_text, right}, ctx).status;

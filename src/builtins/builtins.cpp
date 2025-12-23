@@ -926,6 +926,67 @@ int run_declare(const std::vector<std::string>& argv, Context& context) {
   return 0;
 }
 
+std::string expand_tr_set(std::string_view s) {
+  std::string result;
+  for (std::size_t i = 0; i < s.size(); ++i) {
+    if (i + 2 < s.size() && s[i + 1] == '-') {
+      const char from = s[i];
+      const char to = s[i + 2];
+      if (from <= to) {
+        for (int c = static_cast<unsigned char>(from); c <= static_cast<unsigned char>(to); ++c) {
+          result.push_back(static_cast<char>(c));
+        }
+      } else {
+        result.push_back(from);
+        result.push_back('-');
+        result.push_back(to);
+      }
+      i += 2;
+    } else {
+      result.push_back(s[i]);
+    }
+  }
+  return result;
+}
+
+int run_tr(const std::vector<std::string>& argv, Context& context) {
+  if (argv.size() < 3) return 1;
+  const std::string s1 = expand_tr_set(argv[1]);
+  const std::string s2 = expand_tr_set(argv[2]);
+  unsigned char map[256];
+  for (int i = 0; i < 256; ++i) map[i] = static_cast<unsigned char>(i);
+  for (std::size_t i = 0; i < s1.size(); ++i) {
+    const unsigned char from = static_cast<unsigned char>(s1[i]);
+    const unsigned char to = static_cast<unsigned char>(i < s2.size() ? s2[i] : (s2.empty() ? s1[i] : s2.back()));
+    map[from] = to;
+  }
+  char buf[4096];
+  while (true) {
+    const ssize_t n = ::read(context.input_fd, buf, sizeof(buf));
+    if (n <= 0) break;
+    for (ssize_t i = 0; i < n; ++i) {
+      buf[i] = static_cast<char>(map[static_cast<unsigned char>(buf[i])]);
+    }
+    write_all(context.output_fd, std::string_view(buf, static_cast<std::size_t>(n)));
+  }
+  return 0;
+}
+
+int run_sleep(const std::vector<std::string>& argv, Context& context) {
+  (void)context;
+  if (argv.size() < 2) return 1;
+  try {
+    const double seconds = std::stod(argv[1]);
+    if (seconds > 0) {
+      const auto us = static_cast<useconds_t>(seconds * 1000000.0);
+      usleep(us);
+    }
+    return 0;
+  } catch (...) {
+    return 1;
+  }
+}
+
 }  // namespace
 
 std::vector<std::string> names() {
@@ -933,19 +994,32 @@ std::vector<std::string> names() {
           "dirs", "disown", "echo", "eval", "exec", "exit", "export", "false", "fg",
           "getopts", "hash", "help", "history", "jobs", "kill", "local", "mapfile",
           "popd", "printf", "pushd", "pwd", "read", "readarray", "readonly", "return",
-          "set", "shift", "source", "test", "times", "trap", "true", "type", "typeset",
+          "set", "shift", "sleep", "source", "test", "times", "trap", "true", "tr", "type", "typeset",
           "ulimit", "umask", "unalias", "unset", "wait"};
 }
 
 bool is_builtin(std::string_view name) noexcept {
+  if (name == "/usr/bin/printf" || name == "/bin/printf" ||
+      name == "/usr/bin/true" || name == "/bin/true" ||
+      name == "/usr/bin/false" || name == "/bin/false" ||
+      name == "/bin/echo" || name == "/usr/bin/echo" ||
+      name == "/usr/bin/tr" || name == "/bin/sleep" || name == "/usr/bin/sleep") {
+    return true;
+  }
   static const auto builtin_names = names();
   return std::find(builtin_names.begin(), builtin_names.end(), name) != builtin_names.end();
 }
 
 Result run(const std::vector<std::string>& argv, Context& context) {
   if (argv.empty()) return Result{true, 0, false};
-  const std::string_view name(argv.front());
-  if (!is_builtin(name)) return Result{};
+  std::string_view name(argv.front());
+  if (name == "/usr/bin/printf" || name == "/bin/printf") name = "printf";
+  else if (name == "/usr/bin/true" || name == "/bin/true") name = "true";
+  else if (name == "/usr/bin/false" || name == "/bin/false") name = "false";
+  else if (name == "/bin/echo" || name == "/usr/bin/echo") name = "echo";
+  else if (name == "/usr/bin/tr") name = "tr";
+  else if (name == "/bin/sleep" || name == "/usr/bin/sleep") name = "sleep";
+  if (!is_builtin(argv.front())) return Result{};
   Result result{true, 0, false};
 
   if (name == ":" || name == "true") return result;
@@ -969,6 +1043,10 @@ Result run(const std::vector<std::string>& argv, Context& context) {
     write_all(context.output_fd, output);
   } else if (name == "printf") {
     result.status = run_printf(argv, context);
+  } else if (name == "tr") {
+    result.status = run_tr(argv, context);
+  } else if (name == "sleep") {
+    result.status = run_sleep(argv, context);
   } else if (name == "pwd") {
     char buffer[4096];
     if (getcwd(buffer, sizeof(buffer)) == nullptr) result.status = 1;

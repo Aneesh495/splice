@@ -90,6 +90,7 @@ struct WhileCommand {
 struct CaseItem {
   std::vector<Word> patterns;
   CommandPtr body;
+  std::string terminator{";;"};
 };
 
 struct CaseCommand {

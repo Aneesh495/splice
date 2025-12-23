@@ -385,16 +385,25 @@ CommandPtr Parser::parse_case() {
       }
     }
     skip_newlines();
-    if (!is_reserved("esac") && !current().is(TokenKind::SemiSemi)) {
+    if (!is_reserved("esac") && !current().is(TokenKind::SemiSemi) &&
+        !current().is(TokenKind::SemiAnd) && !current().is(TokenKind::SemiSemiAnd)) {
       item.body = parse_list(false, false);
     }
-    command->case_cmd->items.push_back(std::move(item));
     skip_newlines();
-    if (current().is(TokenKind::SemiSemi) || current().is(TokenKind::SemiAnd) ||
-        current().is(TokenKind::SemiSemiAnd)) {
+    if (current().is(TokenKind::SemiSemi)) {
+      item.terminator = ";;";
+      ++index_;
+      skip_newlines();
+    } else if (current().is(TokenKind::SemiAnd)) {
+      item.terminator = ";&";
+      ++index_;
+      skip_newlines();
+    } else if (current().is(TokenKind::SemiSemiAnd)) {
+      item.terminator = ";;&";
       ++index_;
       skip_newlines();
     }
+    command->case_cmd->items.push_back(std::move(item));
   }
 
   if (!expect_reserved("esac", "expected `esac` to close case", "close with `esac`")) return nullptr;
