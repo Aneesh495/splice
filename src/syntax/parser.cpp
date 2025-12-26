@@ -88,6 +88,26 @@ CommandPtr Parser::parse_simple() {
       ++index_;
       continue;
     }
+    if (saw_word && command->simple.words.back().spelling.ends_with('=') && current().is(TokenKind::LeftParen)) {
+      Word& assign_word = command->simple.words.back();
+      assign_word.spelling += "(";
+      ++index_;
+      while (!current().is(TokenKind::RightParen) && !current().is(TokenKind::End)) {
+        if (current().is(TokenKind::Word)) {
+          if (!assign_word.spelling.ends_with('(')) assign_word.spelling += " ";
+          assign_word.spelling += current().word.spelling;
+          for (const auto& p : current().word.parts) assign_word.parts.push_back(p);
+        }
+        ++index_;
+      }
+      if (current().is(TokenKind::RightParen)) {
+        assign_word.spelling += ")";
+        assign_word.span.end = current().span.end;
+        command->span.end = current().span.end;
+        ++index_;
+      }
+      continue;
+    }
     if (current().is(TokenKind::IoNumber) || is_redirection(current().kind)) {
       if (!parse_redirection(command->simple)) return nullptr;
       command->span.end = command->simple.redirections.back().span.end;
@@ -289,6 +309,7 @@ CommandPtr Parser::parse_for() {
         command->for_cmd->arith_cond = text.substr(s1 + 1);
       }
     }
+    if (current().is(TokenKind::Semicolon)) ++index_;
   } else {
     if (!current().is(TokenKind::Word)) {
       error(current().span, "expected variable name after for", "provide a variable name");

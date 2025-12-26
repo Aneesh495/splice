@@ -29,6 +29,7 @@ struct PlannedCommand {
   std::vector<DescriptorAction> descriptors;
   bool merge_stderr{false};
   bool parent_builtin_eligible{false};
+  syntax::CommandPtr compound_node;
 };
 
 struct ExecutionPlan {

@@ -7,6 +7,7 @@
 #include "runtime/runtime.hpp"
 #include "task/runner.hpp"
 #include "syntax/ast.hpp"
+#include "syntax/formatter.hpp"
 #include "syntax/lexer.hpp"
 #include "syntax/parser.hpp"
 
@@ -49,6 +50,8 @@ void print_help(std::ostream& out) {
       << "  --dump-plan            print the expanded descriptor plan as JSON\n"
       << "  --trace FILE           write versioned runtime events as JSONL\n"
       << "  run --manifest FILE    execute a bounded task manifest\n"
+      << "  format [--check] FILE  format a shell script canonically\n"
+      << "  lint [--json] FILE     statically lint shell scripts for hazards\n"
       << "  --profile=PROFILE      posix, bash, or splice\n"
       << "  --version              print the version\n"
       << "  -h, --help             print this help\n";
@@ -245,10 +248,155 @@ int run_interactive(const Options& options) {
   return state.last_status;
 }
 
+int run_format_cli(int argc, char** argv) {
+  bool check = false;
+  std::size_t indent_width = 2;
+  std::vector<std::string> files;
+  for (int index = 2; index < argc; ++index) {
+    const std::string_view arg(argv[index]);
+    if (arg == "--check") {
+      check = true;
+    } else if (arg == "--indent" && index + 1 < argc) {
+      try { indent_width = std::stoul(argv[++index]); }
+      catch (...) { std::cerr << "splice format: invalid indent\n"; return 2; }
+    } else if (!arg.starts_with("-")) {
+      files.emplace_back(arg);
+    }
+  }
+
+  syntax::FormatOptions options;
+  options.indent_width = indent_width;
+  syntax::Formatter formatter(options);
+
+  if (files.empty()) {
+    std::ostringstream buf;
+    buf << std::cin.rdbuf();
+    const std::string text = buf.str();
+    source::SourceBuffer source(text, "<stdin>");
+    syntax::Lexer lexer(source);
+    auto lexed = lexer.run();
+    syntax::Parser parser(source, lexed.tokens);
+    auto parsed = parser.run();
+    if (lexed.diagnostics.has_error() || parsed.diagnostics.has_error()) {
+      std::cerr << "splice format: syntax errors in input\n";
+      return 1;
+    }
+    const std::string formatted = formatter.format(parsed.program);
+    if (check) {
+      return (formatted == text) ? 0 : 1;
+    }
+    std::cout << formatted;
+    return 0;
+  }
+
+  int exit_code = 0;
+  for (const auto& file : files) {
+    std::ifstream in(file);
+    if (!in) {
+      std::cerr << "splice format: cannot open " << file << ": " << std::strerror(errno) << '\n';
+      exit_code = 2;
+      continue;
+    }
+    std::ostringstream buf;
+    buf << in.rdbuf();
+    in.close();
+    const std::string text = buf.str();
+    source::SourceBuffer source(text, file);
+    syntax::Lexer lexer(source);
+    auto lexed = lexer.run();
+    syntax::Parser parser(source, lexed.tokens);
+    auto parsed = parser.run();
+    if (lexed.diagnostics.has_error() || parsed.diagnostics.has_error()) {
+      std::cerr << "splice format: syntax error in " << file << '\n';
+      exit_code = 1;
+      continue;
+    }
+    const std::string formatted = formatter.format(parsed.program);
+    if (check) {
+      if (formatted != text) {
+        std::cerr << "splice format: " << file << " needs formatting\n";
+        exit_code = 1;
+      }
+    } else {
+      std::ofstream out(file);
+      if (!out) {
+        std::cerr << "splice format: cannot write " << file << ": " << std::strerror(errno) << '\n';
+        exit_code = 2;
+        continue;
+      }
+      out << formatted;
+    }
+  }
+  return exit_code;
+}
+
+int run_lint_cli(int argc, char** argv) {
+  bool json_output = false;
+  std::vector<std::string> files;
+  for (int index = 2; index < argc; ++index) {
+    const std::string_view arg(argv[index]);
+    if (arg == "--json") {
+      json_output = true;
+    } else if (!arg.starts_with("-")) {
+      files.emplace_back(arg);
+    }
+  }
+
+  if (files.empty()) {
+    std::cerr << "splice lint: no files specified\n";
+    return 2;
+  }
+
+  syntax::Linter linter;
+  std::vector<syntax::Diagnostic> all_diags;
+  int exit_code = 0;
+
+  for (const auto& file : files) {
+    std::ifstream in(file);
+    if (!in) {
+      std::cerr << "splice lint: cannot open " << file << ": " << std::strerror(errno) << '\n';
+      exit_code = 2;
+      continue;
+    }
+    std::ostringstream buf;
+    buf << in.rdbuf();
+    const std::string text = buf.str();
+    source::SourceBuffer source(text, file);
+    syntax::Lexer lexer(source);
+    auto lexed = lexer.run();
+    syntax::Parser parser(source, lexed.tokens);
+    auto parsed = parser.run();
+    if (lexed.diagnostics.has_error() || parsed.diagnostics.has_error()) {
+      std::cerr << "splice lint: syntax error in " << file << '\n';
+      exit_code = 1;
+      continue;
+    }
+    auto diags = linter.lint(parsed.program, &source);
+    if (!diags.empty()) exit_code = 1;
+    for (auto& d : diags) all_diags.push_back(std::move(d));
+  }
+
+  if (json_output) {
+    std::cout << "{\"diagnostics\":[";
+    for (std::size_t i = 0; i < all_diags.size(); ++i) {
+      if (i > 0) std::cout << ",";
+      std::cout << all_diags[i].to_json();
+    }
+    std::cout << "]}\n";
+  } else {
+    for (const auto& d : all_diags) {
+      std::cerr << d.format() << '\n';
+    }
+  }
+  return exit_code;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   if (argc > 1 && std::string_view(argv[1]) == "run") return run_task_cli(argc, argv);
+  if (argc > 1 && std::string_view(argv[1]) == "format") return run_format_cli(argc, argv);
+  if (argc > 1 && std::string_view(argv[1]) == "lint") return run_lint_cli(argc, argv);
   Options options;
   if (!parse_options(argc, argv, options, std::cerr)) return 2;
 

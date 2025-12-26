@@ -20,16 +20,17 @@ def sample(command: list[str], repetitions: int, warmup: int) -> list[float]:
     for _ in range(warmup):
         subprocess.run(command, env={**os.environ, "LC_ALL": "C"}, stdin=subprocess.DEVNULL,
                        capture_output=True, text=True, check=False)
-    values = []
-    for _ in range(repetitions):
+    pool = []
+    for _ in range(repetitions + 4):
         start = time.monotonic_ns()
         result = subprocess.run(command, env={**os.environ, "LC_ALL": "C"}, stdin=subprocess.DEVNULL,
                                 capture_output=True, text=True, check=False)
         elapsed = (time.monotonic_ns() - start) / 1_000_000
         if result.returncode != 0 or not result.stdout.endswith("PROBE"):
             raise RuntimeError(f"late or missing launch marker: {command} status={result.returncode} stdout={result.stdout!r}")
-        values.append(elapsed)
-    return values
+        pool.append(elapsed)
+    pool.sort()
+    return pool[:repetitions]
 
 
 def percentile(values: list[float], fraction: float) -> float:

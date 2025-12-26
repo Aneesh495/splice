@@ -21,10 +21,12 @@ endif()
 add_executable(splice
   src/app/main.cpp
   src/syntax/ast.cpp
+  src/syntax/formatter.cpp
   src/syntax/lexer.cpp
   src/syntax/parser.cpp
   src/syntax/token.cpp
   src/expand/expander.cpp
+  src/expand/glob.cpp
   src/expand/pattern.cpp
   src/expand/state.cpp
   src/plan/plan.cpp

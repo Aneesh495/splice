@@ -44,7 +44,8 @@ def main() -> int:
     steps.append(command_result("differential", [sys.executable, "tools/differential.py", "--executable", args.executable, "--count", "100"]))
     steps.append(command_result("stress", [sys.executable, "tools/stress.py", "--executable", args.executable, "--cycles", "1000"]))
     steps.append(command_result("fuzz", [sys.executable, "tools/fuzz.py", "--executable", args.executable, "--cases", "1000"]))
-    steps.append(command_result("benchmark", [sys.executable, "tools/benchmark.py", "--executable", args.executable, "--repetitions", "10"]))
+    time.sleep(1.0)
+    steps.append(command_result("benchmark", [sys.executable, "tools/benchmark.py", "--executable", args.executable, "--repetitions", "10", "--warmup", "2"]))
     steps.append(command_result("census", [sys.executable, "tools/census.py"]))
     steps.append(command_result("pty", ["ctest", "--test-dir", "build", "--output-on-failure", "-R", "splice_pty_cases"]))
     for source, name in ((ROOT / ".agent-local/differential.json", "differential.json"), (ROOT / ".agent-local/stress.json", "stress.json"),

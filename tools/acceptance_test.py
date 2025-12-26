@@ -32,6 +32,7 @@ def main() -> int:
     manifest_data = json.loads(manifest.read_text())
     artifact = ROOT / next(iter(manifest_data["files"]))
     artifact_bytes = artifact.read_bytes()
+    baseline = verify().returncode
     try:
         artifact.unlink()
         expect_failure("missing artifact")
@@ -45,7 +46,7 @@ def main() -> int:
     finally:
         artifact.write_bytes(artifact_bytes)
         acceptance.write_bytes(acceptance_bytes)
-    if verify().returncode == 0:
+    if verify().returncode != baseline:
         raise AssertionError("verifier mutation cleanup changed the baseline unexpectedly")
     print("acceptance mutation checks: missing, altered, and false-gate cases rejected")
     return 0

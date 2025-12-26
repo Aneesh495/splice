@@ -12,7 +12,17 @@ namespace splice::expand {
 
 enum class Profile { Posix, Bash, Splice };
 
-enum class ShellOption { Errexit, Nounset, Noclobber, Pipefail };
+enum class ShellOption {
+  Errexit,
+  Nounset,
+  Noclobber,
+  Pipefail,
+  Globstar,
+  Dotglob,
+  Nullglob,
+  Failglob,
+  Nocaseglob
+};
 
 struct Variable {
   std::string value;

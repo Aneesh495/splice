@@ -184,8 +184,21 @@ bool PlanBuilder::build_command(const syntax::CommandPtr& command, ExecutionPlan
       return command->children.empty() ? false : build_command(command->children.front(), plan);
     case syntax::CommandKind::Subshell:
     case syntax::CommandKind::Group:
-      fail(plan, "compound command requires its own execution context");
-      return false;
+    case syntax::CommandKind::If:
+    case syntax::CommandKind::For:
+    case syntax::CommandKind::While:
+    case syntax::CommandKind::Until:
+    case syntax::CommandKind::Case: {
+      PlannedCommand stage;
+      stage.span = command->span;
+      stage.compound_node = command;
+      for (const auto& redirection : command->redirections) {
+        if (!build_redirection(redirection, stage)) return false;
+      }
+      stage.environment = state_.environment();
+      plan.stages.push_back(std::move(stage));
+      return true;
+    }
     default:
       fail(plan, "this command form is not yet executable in the planner");
       return false;

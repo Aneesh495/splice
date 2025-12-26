@@ -978,8 +978,10 @@ int run_sleep(const std::vector<std::string>& argv, Context& context) {
   try {
     const double seconds = std::stod(argv[1]);
     if (seconds > 0) {
-      const auto us = static_cast<useconds_t>(seconds * 1000000.0);
-      usleep(us);
+      struct timespec ts;
+      ts.tv_sec = static_cast<time_t>(seconds);
+      ts.tv_nsec = static_cast<long>((seconds - static_cast<double>(ts.tv_sec)) * 1000000000.0);
+      nanosleep(&ts, nullptr);
     }
     return 0;
   } catch (...) {

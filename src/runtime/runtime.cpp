@@ -134,12 +134,10 @@ void Runtime::drain_signal_bridge() {
 
 Runtime::~Runtime() {
   restore_signal_bridge();
-  for (auto& [id, job] : jobs_) {
-    if (job.state != JobState::Completed) {
-      if (job.process_group > 0) ::kill(-job.process_group, SIGHUP);
-      for (const auto process : job.processes) {
-        int status = 0;
-        while (waitpid(process.value, &status, 0) < 0 && errno == EINTR) {}
+  if (interactive_) {
+    for (auto& [id, job] : jobs_) {
+      if (job.state != JobState::Completed && job.process_group > 0) {
+        ::kill(-job.process_group, SIGHUP);
       }
     }
   }
@@ -287,6 +285,10 @@ int Runtime::child_setup_and_exec(const plan::PlannedCommand& command,
     _exit(125);
   }
   for (const auto& [name, value] : command.assignments) setenv(name.c_str(), value.c_str(), 1);
+  if (command.compound_node) {
+    const int status = execute_command(command.compound_node);
+    _exit(status);
+  }
   if (command.argv.empty()) _exit(0);
   if (builtins::is_builtin(command.argv.front())) {
     builtins::Context context{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, false, {}, {}, {}};
@@ -328,10 +330,25 @@ int Runtime::execute_parent_builtin(const plan::PlannedCommand& command) {
     }
   }
   for (const auto& [name, value] : command.assignments) {
-    if (!state_.set(name, value)) {
-      restore_parent_descriptors(saved);
-      report_error("assignment failed for readonly variable");
-      return 1;
+    if (value.starts_with("(") && value.ends_with(")")) {
+      std::string_view inner = std::string_view(value).substr(1, value.size() - 2);
+      std::vector<std::string> elements;
+      std::size_t start = 0;
+      while (start < inner.size()) {
+        while (start < inner.size() && (inner[start] == ' ' || inner[start] == '\t')) ++start;
+        if (start >= inner.size()) break;
+        std::size_t end = start;
+        while (end < inner.size() && inner[end] != ' ' && inner[end] != '\t') ++end;
+        elements.emplace_back(inner.substr(start, end - start));
+        start = end;
+      }
+      state_.set_array(name, std::move(elements));
+    } else {
+      if (!state_.set(name, value)) {
+        restore_parent_descriptors(saved);
+        report_error("assignment failed for readonly variable");
+        return 1;
+      }
     }
   }
   builtins::Context context{state_, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, true,
@@ -546,7 +563,9 @@ int Runtime::wait_foreground(Job& job) {
 
 bool Runtime::try_fast_spawn(const plan::PlannedCommand& command, int input_fd,
                              int output_fd, int error_fd, pid_t group, pid_t& pid) {
+  if (command.compound_node) return false;
   if (command.argv.empty()) return false;
+  if (state_.aliases.find(command.argv.front()) != state_.aliases.end()) return false;
   if (builtins::is_builtin(command.argv.front())) return false;
   if (state_.functions.find(command.argv.front()) != state_.functions.end()) return false;
 
@@ -805,10 +824,21 @@ int Runtime::execute_plan(const plan::ExecutionPlan& plan) {
     return 2;
   }
   if (plan.stages.size() == 1 && !plan.background) {
+    if (plan.stages.front().compound_node) {
+      return execute_command(plan.stages.front().compound_node);
+    }
     if (plan.stages.front().argv.empty()) {
       return execute_parent_builtin(plan.stages.front());
     }
     const std::string& name = plan.stages.front().argv.front();
+    const auto alias_it = state_.aliases.find(name);
+    if (alias_it != state_.aliases.end()) {
+      std::string new_script = alias_it->second;
+      for (std::size_t i = 1; i < plan.stages.front().argv.size(); ++i) {
+        new_script += " " + plan.stages.front().argv[i];
+      }
+      return execute_string(new_script);
+    }
     const auto func_it = state_.functions.find(name);
     if (func_it != state_.functions.end()) {
       return execute_function(plan.stages.front(), func_it->second);

@@ -1,4 +1,6 @@
 #include "expand/expander.hpp"
+#include "expand/glob.hpp"
+#include "expand/pattern.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -1088,16 +1090,17 @@ std::vector<Field> Expander::pathname_expand(std::vector<Field> fields, bool had
       result.push_back(field);
       continue;
     }
-    glob_t matches{};
-    if (glob(field.value.c_str(), GLOB_NOSORT, nullptr, &matches) == 0) {
-      std::vector<std::string> paths;
-      for (std::size_t index = 0; index < matches.gl_pathc; ++index) paths.emplace_back(matches.gl_pathv[index]);
-      std::sort(paths.begin(), paths.end());
-      for (auto& path : paths) result.push_back(Field{std::move(path), false});
-    } else {
-      result.push_back(field);
+    GlobOptions options;
+    options.globstar = state_.option(ShellOption::Globstar);
+    options.dotglob = state_.option(ShellOption::Dotglob);
+    options.nullglob = state_.option(ShellOption::Nullglob);
+    options.failglob = state_.option(ShellOption::Failglob);
+    options.nocaseglob = state_.option(ShellOption::Nocaseglob);
+    PathGlobber globber(options);
+    auto glob_res = globber.expand(field.value);
+    for (auto& path : glob_res.matches) {
+      result.push_back(Field{std::move(path), false});
     }
-    globfree(&matches);
   }
   return result;
 }

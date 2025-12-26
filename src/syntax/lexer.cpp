@@ -9,9 +9,11 @@ namespace {
 bool is_operator_start(char value, char next = '\0') {
   if (value == '[' && next == '[') return true;
   if (value == ']' && next == ']') return true;
+  if (value == '{' || value == '}' || value == '!') {
+    return next == '\0' || next == ' ' || next == '\t' || next == '\r' || next == '\n' || next == ';';
+  }
   return value == ';' || value == '&' || value == '|' || value == '<' ||
-         value == '>' || value == '(' || value == ')' || value == '{' ||
-         value == '}' || value == '!';
+         value == '>' || value == '(' || value == ')';
 }
 
 bool is_boundary(char value, char next = '\0') {
@@ -124,21 +126,29 @@ bool Lexer::scan_arithmetic(Word& word, source::Diagnostics& diagnostics) {
   offset_ += 3;
   std::size_t cursor = offset_;
   std::size_t depth = 1;
-  while (cursor + 1 < input_.size()) {
+  while (cursor < input_.size()) {
+    if (input_[cursor] == '\\' && cursor + 1 < input_.size()) {
+      cursor += 2;
+      continue;
+    }
     if (input_[cursor] == '(') {
       ++depth;
       ++cursor;
       continue;
     }
-    if (input_[cursor] == ')' && input_[cursor + 1] == ')') {
-      --depth;
-      if (depth == 0) {
+    if (input_[cursor] == ')') {
+      if (depth == 1 && cursor + 1 < input_.size() && input_[cursor + 1] == ')') {
         word.parts.push_back(WordPart{WordPartKind::Arithmetic,
                                       source::Span{start, cursor + 2},
                                       input_.substr(offset_, cursor - offset_)});
         offset_ = cursor + 2;
         return true;
       }
+      if (depth > 1) {
+        --depth;
+      }
+      ++cursor;
+      continue;
     }
     ++cursor;
   }
@@ -183,6 +193,7 @@ bool Lexer::scan_word(LexResult& result) {
   Word word;
   word.span.begin = start;
   std::string literal;
+  int brace_depth = 0;
   auto flush_literal = [&]() {
     if (!literal.empty()) {
       word.parts.push_back(WordPart{WordPartKind::Literal,
@@ -194,6 +205,66 @@ bool Lexer::scan_word(LexResult& result) {
 
   while (!at_end()) {
     const char value = peek();
+    if (value == '{') {
+      ++brace_depth;
+      literal.push_back(take());
+      continue;
+    }
+    if (value == '}' && brace_depth > 0) {
+      --brace_depth;
+      literal.push_back(take());
+      continue;
+    }
+    if (value == '(' && !literal.empty() &&
+        (literal.back() == '@' || literal.back() == '!' || literal.back() == '+' ||
+         literal.back() == '?' || literal.back() == '*')) {
+      int paren_depth = 1;
+      literal.push_back(take());
+      while (!at_end() && paren_depth > 0) {
+        const char ch = peek();
+        if (ch == '\\') {
+          literal.push_back(take());
+          if (!at_end()) literal.push_back(take());
+          continue;
+        }
+        if (ch == '\'') {
+          literal.push_back(take());
+          while (!at_end() && peek() != '\'') {
+            literal.push_back(take());
+          }
+          if (!at_end()) literal.push_back(take());
+          continue;
+        }
+        if (ch == '"') {
+          literal.push_back(take());
+          while (!at_end()) {
+            if (peek() == '\\' && peek(1) != '\0') {
+              literal.push_back(take());
+              literal.push_back(take());
+              continue;
+            }
+            if (peek() == '"') {
+              literal.push_back(take());
+              break;
+            }
+            literal.push_back(take());
+          }
+          continue;
+        }
+        if (ch == '(') {
+          ++paren_depth;
+          literal.push_back(take());
+          continue;
+        }
+        if (ch == ')') {
+          --paren_depth;
+          literal.push_back(take());
+          continue;
+        }
+        literal.push_back(take());
+      }
+      continue;
+    }
     if (is_boundary(value, peek(1))) break;
     if (value == '\\') {
       flush_literal();
