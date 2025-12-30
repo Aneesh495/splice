@@ -66,7 +66,7 @@ def main() -> int:
     evidence = {"schema": 1, "requested_sessions": args.sessions, "completed_sessions": sum(row["status"] == 0 for row in rows),
                 "failures": [row for row in rows if row["status"] != 0], "duration_ns": time.monotonic_ns() - started,
                 "transport": "pty.openpty with prompt and output readiness markers"}
-    target = ROOT / ".agent-local" / "pty-heavy.json"
+    target = ROOT / "artifacts" / "pty-heavy.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps({"requested_sessions": args.sessions, "completed_sessions": evidence["completed_sessions"], "failures": len(evidence["failures"])}))

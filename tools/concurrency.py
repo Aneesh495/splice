@@ -53,7 +53,7 @@ def main() -> int:
     evidence = {"schema": 1, "requested_groups": args.groups, "repetitions": args.repetitions, "hold_seconds": args.hold_seconds, "runs": rows,
                 "minimum_peak": min((row["peak_live_groups"] for row in rows), default=0),
                 "observation": "ps records were filtered by exact shell parent PID and zombie state"}
-    target = ROOT / ".agent-local" / "concurrency.json"
+    target = ROOT / "artifacts" / "concurrency.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence))

@@ -73,7 +73,7 @@ def main() -> int:
                 "warmup": args.warmup, "endpoint": "subprocess start to final PROBE stdout marker",
                 "workload_count": len(workloads), "workloads": workloads,
                 "dispatch_reduction_percent": reduction, "target_status": "computed-not-accepted"}
-    target = ROOT / ".agent-local" / "benchmark.json"
+    target = ROOT / "artifacts" / "benchmark.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps({"workload_count": len(workloads), "repetitions": args.repetitions,

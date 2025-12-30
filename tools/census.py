@@ -60,7 +60,7 @@ def main() -> int:
         "files": rows,
         "reconstruction": "Count nonblank, non-comment lines under src and tools; exclude generated/vendor/fixture paths. Tests, docs, build files, and generated artifacts are excluded from the production total.",
     }
-    target = ROOT / ".agent-local" / "census.json"
+    target = ROOT / "artifacts" / "census.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps({key: payload[key] for key in ("commit", "substantive_production_lines", "physical_lines")}))

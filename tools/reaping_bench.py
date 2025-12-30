@@ -58,7 +58,7 @@ def main() -> int:
     parser.add_argument("--executable", default=str(ROOT / "build-release" / "splice"))
     parser.add_argument("--children", type=int, default=20, help="Number of background children per cycle")
     parser.add_argument("--repetitions", type=int, default=15, help="Number of benchmark iterations")
-    parser.add_argument("--output", default=str(ROOT / ".agent-local" / "reaping.json"))
+    parser.add_argument("--output", default=str(ROOT / "artifacts" / "reaping.json"))
     args = parser.parse_args()
 
     splice_path = str(pathlib.Path(args.executable).resolve())

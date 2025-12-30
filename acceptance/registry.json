@@ -55,7 +55,7 @@
       "id": "pty-heavy",
       "description": "300 real PTY sessions with readiness markers",
       "command": "tools/pty_campaign.py --sessions 300",
-      "required_artifact": ".agent-local/pty-heavy.json",
+      "required_artifact": "artifacts/pty-heavy.json",
       "minimum_progress": 300
     },
     {
@@ -69,21 +69,21 @@
       "id": "private-census",
       "description": "Ignored substantive production census",
       "command": "tools/census.py",
-      "required_artifact": ".agent-local/census.json",
+      "required_artifact": "artifacts/census.json",
       "minimum_progress": 10000
     },
     {
       "id": "heavy-concurrency",
       "description": "500 live groups in 30 repetitions on primary profile",
       "command": "tools/concurrency.py",
-      "required_artifact": ".agent-local/concurrency.json",
+      "required_artifact": "artifacts/concurrency.json",
       "minimum_progress": 15000
     },
     {
       "id": "heavy-stress",
       "description": "180000 real completed child cycles",
       "command": "tools/stress.py --cycles 180000",
-      "required_artifact": ".agent-local/stress-heavy.json",
+      "required_artifact": "artifacts/stress-heavy.json",
       "minimum_progress": 180000
     }
   ]

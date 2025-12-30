@@ -38,7 +38,7 @@ def main() -> int:
     parser.add_argument("--executable", default=str(ROOT / "build/splice"))
     args = parser.parse_args()
     EVIDENCE.mkdir(parents=True, exist_ok=True)
-    (ROOT / ".agent-local").mkdir(exist_ok=True)
+    (ROOT / "artifacts").mkdir(exist_ok=True)
     steps = []
     steps.append(command_result("ctest", ["ctest", "--test-dir", "build", "--output-on-failure"]))
     steps.append(command_result("differential", [sys.executable, "tools/differential.py", "--executable", args.executable, "--count", "100"]))
@@ -48,9 +48,9 @@ def main() -> int:
     steps.append(command_result("benchmark", [sys.executable, "tools/benchmark.py", "--executable", args.executable, "--repetitions", "10", "--warmup", "2"]))
     steps.append(command_result("census", [sys.executable, "tools/census.py"]))
     steps.append(command_result("pty", ["ctest", "--test-dir", "build", "--output-on-failure", "-R", "splice_pty_cases"]))
-    for source, name in ((ROOT / ".agent-local/differential.json", "differential.json"), (ROOT / ".agent-local/stress.json", "stress.json"),
-                         (ROOT / ".agent-local/fuzz.json", "fuzz.json"), (ROOT / ".agent-local/benchmark.json", "benchmark.json"),
-                         (ROOT / ".agent-local/census.json", "census.json")):
+    for source, name in ((ROOT / "artifacts/differential.json", "differential.json"), (ROOT / "artifacts/stress.json", "stress.json"),
+                         (ROOT / "artifacts/fuzz.json", "fuzz.json"), (ROOT / "artifacts/benchmark.json", "benchmark.json"),
+                         (ROOT / "artifacts/census.json", "census.json")):
         copy_json(source, name)
     (EVIDENCE / "ctest.json").write_text(json.dumps(steps[0], indent=2) + "\n")
     (EVIDENCE / "pty.json").write_text(json.dumps(steps[-1], indent=2) + "\n")
@@ -71,7 +71,7 @@ def main() -> int:
     gate("stress-fast", 1000, raw.get("stress", {}).get("completed_cycles") or 0, steps[2])
     gate("fuzz-fast", 1000, raw.get("fuzz", {}).get("executed", 0), steps[3])
     gate("benchmark", 10, raw.get("benchmark", {}).get("repetitions", 0), steps[4], "computed samples are not the 60% target gate")
-    benchmark_path = ROOT / ".agent-local" / "benchmark.json"
+    benchmark_path = ROOT / "artifacts" / "benchmark.json"
     performance_actual = 0
     if benchmark_path.exists():
         benchmark_data = json.loads(benchmark_path.read_text())
@@ -81,17 +81,17 @@ def main() -> int:
     gates.append({"id": "performance-targets", "required": 1, "actual": performance_actual, "command_status": steps[4]["status"], "verified": steps[4]["status"] == 0 and performance_actual == 1, "reason": "dispatch reduction and p95 must both meet frozen protocol targets"})
     gate("private-census", 10000, raw.get("census", {}).get("substantive_production_lines", 0), steps[5], "private ledger is ignored and not published")
     gate("pty-fast", 1, 1 if steps[6]["status"] == 0 else 0, steps[6], "one real PTY session; required campaign is 300")
-    pty_heavy_path = ROOT / ".agent-local" / "pty-heavy.json"
+    pty_heavy_path = ROOT / "artifacts" / "pty-heavy.json"
     pty_heavy_actual = int(json.loads(pty_heavy_path.read_text()).get("completed_sessions", 0)) if pty_heavy_path.exists() else 0
     pty_heavy_status = 0 if pty_heavy_actual >= 300 and pty_heavy_path.exists() and not json.loads(pty_heavy_path.read_text()).get("failures") else None
     gates.append({"id": "pty-heavy", "required": 300, "actual": pty_heavy_actual, "command_status": pty_heavy_status, "verified": pty_heavy_status == 0 and pty_heavy_actual >= 300, "reason": "recorded independent 300-session campaign" if pty_heavy_status == 0 else "300-session campaign was not run"})
     heavy_concurrency_actual = 0
-    concurrency_path = ROOT / ".agent-local" / "concurrency.json"
+    concurrency_path = ROOT / "artifacts" / "concurrency.json"
     if concurrency_path.exists():
         concurrency_data = json.loads(concurrency_path.read_text())
         heavy_concurrency_actual = int(concurrency_data.get("minimum_peak", 0)) * int(concurrency_data.get("repetitions", 0))
     heavy_stress_actual = 0
-    stress_heavy_path = ROOT / ".agent-local" / "stress-heavy.json"
+    stress_heavy_path = ROOT / "artifacts" / "stress-heavy.json"
     if stress_heavy_path.exists():
         heavy_stress_actual = int(json.loads(stress_heavy_path.read_text()).get("completed_cycles", 0) or 0)
     heavy_concurrency_status = 0 if heavy_concurrency_actual >= 15000 and concurrency_path.exists() and all(run.get("status") == 0 for run in json.loads(concurrency_path.read_text()).get("runs", [])) else None
@@ -109,7 +109,7 @@ def main() -> int:
     for path in sorted(EVIDENCE.glob("*.json")):
         manifest["files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest["private_files"] = {}
-    for path in sorted((ROOT / ".agent-local").glob("*.json")):
+    for path in sorted((ROOT / "artifacts").glob("*.json")):
         if path.name in {"census.json", "concurrency.json", "pty-heavy.json", "stress-heavy.json"}:
             manifest["private_files"][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     (ROOT / "acceptance" / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n")

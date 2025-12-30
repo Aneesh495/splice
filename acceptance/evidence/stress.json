@@ -3,7 +3,7 @@
   "requested_cycles": 1000,
   "completed_cycles": 1000,
   "status": 0,
-  "duration_ns": 2074905125,
+  "duration_ns": 9498458,
   "stdout_bytes": 0,
   "stderr_bytes": 0,
   "transport": "stdin script pipe to avoid exec argument-size limits",

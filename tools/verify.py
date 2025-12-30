@@ -28,11 +28,11 @@ def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int |
         text = json.loads(path.read_text()).get("stdout", "")
         return len(re.findall(r"\d+/\d+ Test", text))
     if gate_id == "pty-heavy":
-        path = root / ".agent-local" / "pty-heavy.json"
+        path = root / "artifacts" / "pty-heavy.json"
         if not path.exists(): return None
         return int(json.loads(path.read_text()).get("completed_sessions", 0) or 0)
     if gate_id == "performance-targets":
-        path = root / ".agent-local" / "benchmark.json"
+        path = root / "artifacts" / "benchmark.json"
         if not path.exists(): return None
         data = json.loads(path.read_text())
         reduction = data.get("dispatch_reduction_percent")
@@ -49,12 +49,12 @@ def measured_actual(gate_id: str, root: pathlib.Path, acceptance: dict) -> int |
         value = data.get(keys[gate_id], 0)
         return int(value or 0)
     if gate_id == "heavy-concurrency":
-        path = root / ".agent-local" / "concurrency.json"
+        path = root / "artifacts" / "concurrency.json"
         if not path.exists(): return None
         data = json.loads(path.read_text())
         return int(data.get("minimum_peak", 0)) * int(data.get("repetitions", 0))
     if gate_id == "heavy-stress":
-        path = root / ".agent-local" / "stress-heavy.json"
+        path = root / "artifacts" / "stress-heavy.json"
         if not path.exists(): return None
         return int(json.loads(path.read_text()).get("completed_cycles", 0) or 0)
     return None
@@ -106,9 +106,9 @@ def main() -> int:
         artifact = required_gate.get("required_artifact")
         if artifact and not (ROOT / artifact).exists():
             failures.append(f"missing required artifact for {required_gate.get('id')}: {artifact}")
-        if artifact and artifact.startswith(".agent-local/") and artifact not in manifest.get("private_files", {}):
+        if artifact and artifact.startswith("artifacts/") and artifact not in manifest.get("private_files", {}):
             failures.append(f"required private artifact is not hashed: {artifact}")
-        if artifact and not artifact.startswith(".agent-local/") and artifact.startswith("acceptance/") and artifact not in manifest.get("files", {}):
+        if artifact and not artifact.startswith("artifacts/") and artifact.startswith("acceptance/") and artifact not in manifest.get("files", {}):
             failures.append(f"required public artifact is not hashed: {artifact}")
         gate = derived.get(required_gate.get("id"))
         if gate is None:

@@ -49,7 +49,7 @@ def main() -> int:
                 "duration_ns": time.monotonic_ns() - started, "outcomes": outcomes,
                 "classification_failures": classification_failures,
                 "execution_policy": "all generated sources used -n and were confined to parser diagnostics"}
-    target = ROOT / ".agent-local" / "fuzz.json"
+    target = ROOT / "artifacts" / "fuzz.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence))

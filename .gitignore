@@ -2,7 +2,7 @@
 /build/
 /build-*/
 /.cache/
-/.agent-local/
+/artifacts/
 /acceptance/artifacts/
 /benchmarks/raw/
 /core

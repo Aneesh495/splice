@@ -91,7 +91,7 @@ def main() -> int:
                          "digest": digest(splice)})
     result = {"schema": 1, "seed": args.seed, "requested": args.count, "executed": len(rows), "references": [name for name, _ in references],
               "matches": sum(row["equal"] is True for row in rows), "differences": sum(row["equal"] is False for row in rows), "cases": rows}
-    target = ROOT / ".agent-local" / "differential.json"
+    target = ROOT / "artifacts" / "differential.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({key: result[key] for key in ("requested", "executed", "matches", "differences", "references")}))

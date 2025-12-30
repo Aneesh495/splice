@@ -27,7 +27,7 @@ def main() -> int:
     evidence = {"schema": 1, "requested_cycles": args.cycles, "completed_cycles": args.cycles if result.returncode == 0 else None,
                 "status": result.returncode, "duration_ns": duration, "stdout_bytes": len(result.stdout), "stderr_bytes": len(result.stderr),
                 "transport": "stdin script pipe to avoid exec argument-size limits", "persistent_zombie_observation": "not performed by fast driver"}
-    target = ROOT / ".agent-local" / ("stress-heavy.json" if args.cycles >= 180000 else "stress.json")
+    target = ROOT / "artifacts" / ("stress-heavy.json" if args.cycles >= 180000 else "stress.json")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence))

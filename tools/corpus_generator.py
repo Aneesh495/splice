@@ -191,7 +191,7 @@ def run_shell(executable: str, script: str, cwd: pathlib.Path) -> tuple[int, str
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run language feature coverage across F01-F30 and X01-X16")
     parser.add_argument("--executable", default=str(ROOT / "build" / "splice"))
-    parser.add_argument("--output", default=str(ROOT / ".agent-local" / "language_coverage.json"))
+    parser.add_argument("--output", default=str(ROOT / "artifacts" / "language_coverage.json"))
     args = parser.parse_args()
 
     executable = str(pathlib.Path(args.executable).resolve())
