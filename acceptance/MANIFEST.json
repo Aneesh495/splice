@@ -1,20 +1,20 @@
 {
   "schema": 1,
-  "source_commit": "01ea760b3c1427c81d76320a28b92b6f4043e7b8",
+  "source_commit": "b9d9116afc1d79fe3c5cf2cf3940ea71ef78e42e",
   "files": {
-    "acceptance/evidence/benchmark.json": "8a96837d920dca296c0ce4637a62521d02f47f5f795344660c1254625f927fc1",
-    "acceptance/evidence/census.json": "9d1507a044825697d5047c4c81c61d86dd10388252a1cbe32ab063611ac42f5b",
-    "acceptance/evidence/ctest.json": "555348e7e98429470634d19805990e65b6f48aa221564d7e71e41378543b71bb",
-    "acceptance/evidence/differential.json": "78dcd93a2722a136e1df9f421a5f6fc1ffc6dad36f629998d9f96cf6defb154c",
-    "acceptance/evidence/fuzz.json": "c8efb71da192b94a7d02911ad03c79a9e97a7136bbe41f537479e7348a1b7e58",
-    "acceptance/evidence/pty.json": "7827d2745911d4fd753579788efed52ca64bfbb68323701f3bc1e3cbbc270447",
-    "acceptance/evidence/stress.json": "c5d27856de633a47c3d41f117f36fd47bd4b9f8b15ed0b885a2e79846ae1e428"
+    "acceptance/evidence/benchmark.json": "7ef18b330d79558aa8f67b220da115a8610a71654c204733a7b2762b1d11a1d0",
+    "acceptance/evidence/census.json": "d90b0a8a9752fa36d26ebfd269ca7d30485efecfec3068827f89d8b81db1d69f",
+    "acceptance/evidence/ctest.json": "179742fce97be9b6cecc4c061ddbf128345f698d571fef3bb1e17e78650f95f1",
+    "acceptance/evidence/differential.json": "3fa476a79551f0e7c2beb8dba63f1165372c231f4b8a1b933c6a0a6f4612adb8",
+    "acceptance/evidence/fuzz.json": "beed1b0fd58f7357a22b650ba3c5964d9441015128e820495e55051bc836e6df",
+    "acceptance/evidence/pty.json": "de3c53651d9a26728187b498dd9f227445b66c39af7e03c9f90345008fd2ef3d",
+    "acceptance/evidence/stress.json": "0817c9690e474a0877fe0560dd7baf8b2eadbcfe828419c9666fb4dd2c8cd6d8"
   },
   "private_files": {
-    ".agent-local/census.json": "9d1507a044825697d5047c4c81c61d86dd10388252a1cbe32ab063611ac42f5b",
+    ".agent-local/census.json": "d90b0a8a9752fa36d26ebfd269ca7d30485efecfec3068827f89d8b81db1d69f",
     ".agent-local/concurrency.json": "2254853031be0f14ce0e35e7695bf13cc034945cc884f0133e0358519e153fd4",
     ".agent-local/pty-heavy.json": "50dd97ce5c695918c5ac5f164ed33bc1303cf7d9df5ed7d61e127d5fee09e88f",
     ".agent-local/stress-heavy.json": "83c2d06d080fbb54c2d67c2508b1f6ad27b0c842f509d8866fb7b92c1cd29563"
   },
-  "acceptance_sha256": "f7a278b8bb42137428a86570c2e6221ec63116f77f11e4604cc8b1c8cfa0a593"
+  "acceptance_sha256": "2fb7c46a5d5c40656a15f1765c4cadf63088e95142fa67c5cfc0e9df29ede4e8"
 }

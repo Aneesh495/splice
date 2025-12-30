@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "source_commit": "01ea760b3c1427c81d76320a28b92b6f4043e7b8",
+  "source_commit": "b9d9116afc1d79fe3c5cf2cf3940ea71ef78e42e",
   "platform": "darwin",
   "steps": [
     {
@@ -12,8 +12,8 @@
         "--output-on-failure"
       ],
       "status": 0,
-      "duration_ns": 1362305625,
-      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 1: splice_version\n1/8 Test #1: splice_version ...................   Passed    0.01 sec\n    Start 2: splice_help\n2/8 Test #2: splice_help ......................   Passed    0.01 sec\n    Start 3: splice_syntax_cases\n3/8 Test #3: splice_syntax_cases ..............   Passed    0.14 sec\n    Start 4: splice_runtime_cases\n4/8 Test #4: splice_runtime_cases .............   Passed    0.25 sec\n    Start 5: splice_runtime_fault_cases\n5/8 Test #5: splice_runtime_fault_cases .......   Passed    0.05 sec\n    Start 6: splice_pty_cases\n6/8 Test #6: splice_pty_cases .................   Passed    0.73 sec\n    Start 7: splice_lsp_cases\n7/8 Test #7: splice_lsp_cases .................   Passed    0.04 sec\n    Start 8: splice_task_cases\n8/8 Test #8: splice_task_cases ................   Passed    0.10 sec\n\n100% tests passed, 0 tests failed out of 8\n\nTotal Test time (real) =   1.33 sec\n",
+      "duration_ns": 1572003250,
+      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 1: splice_version\n1/8 Test #1: splice_version ...................   Passed    0.29 sec\n    Start 2: splice_help\n2/8 Test #2: splice_help ......................   Passed    0.01 sec\n    Start 3: splice_syntax_cases\n3/8 Test #3: splice_syntax_cases ..............   Passed    0.10 sec\n    Start 4: splice_runtime_cases\n4/8 Test #4: splice_runtime_cases .............   Passed    0.25 sec\n    Start 5: splice_runtime_fault_cases\n5/8 Test #5: splice_runtime_fault_cases .......   Passed    0.05 sec\n    Start 6: splice_pty_cases\n6/8 Test #6: splice_pty_cases .................   Passed    0.72 sec\n    Start 7: splice_lsp_cases\n7/8 Test #7: splice_lsp_cases .................   Passed    0.04 sec\n    Start 8: splice_task_cases\n8/8 Test #8: splice_task_cases ................   Passed    0.09 sec\n\n100% tests passed, 0 tests failed out of 8\n\nTotal Test time (real) =   1.55 sec\n",
       "stderr": ""
     },
     {
@@ -22,12 +22,12 @@
         "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
         "tools/differential.py",
         "--executable",
-        "/Users/aneeshkrishna/splice/build/splice",
+        "build-release/splice",
         "--count",
         "100"
       ],
       "status": 0,
-      "duration_ns": 1936395500,
+      "duration_ns": 1319797375,
       "stdout": "{\"requested\": 100, \"executed\": 100, \"matches\": 100, \"differences\": 0, \"references\": [\"dash-posix\", \"bash-posix\"]}\n",
       "stderr": ""
     },
@@ -37,13 +37,13 @@
         "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
         "tools/stress.py",
         "--executable",
-        "/Users/aneeshkrishna/splice/build/splice",
+        "build-release/splice",
         "--cycles",
         "1000"
       ],
       "status": 0,
-      "duration_ns": 2136268625,
-      "stdout": "{\"schema\": 1, \"requested_cycles\": 1000, \"completed_cycles\": 1000, \"status\": 0, \"duration_ns\": 2074905125, \"stdout_bytes\": 0, \"stderr_bytes\": 0, \"transport\": \"stdin script pipe to avoid exec argument-size limits\", \"persistent_zombie_observation\": \"not performed by fast driver\"}\n",
+      "duration_ns": 54337583,
+      "stdout": "{\"schema\": 1, \"requested_cycles\": 1000, \"completed_cycles\": 1000, \"status\": 0, \"duration_ns\": 9498458, \"stdout_bytes\": 0, \"stderr_bytes\": 0, \"transport\": \"stdin script pipe to avoid exec argument-size limits\", \"persistent_zombie_observation\": \"not performed by fast driver\"}\n",
       "stderr": ""
     },
     {
@@ -52,13 +52,13 @@
         "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
         "tools/fuzz.py",
         "--executable",
-        "/Users/aneeshkrishna/splice/build/splice",
+        "build-release/splice",
         "--cases",
         "1000"
       ],
       "status": 0,
-      "duration_ns": 5893240708,
-      "stdout": "{\"schema\": 1, \"seed\": 20261002, \"requested\": 1000, \"executed\": 1000, \"duration_ns\": 5834209167, \"outcomes\": {\"valid\": {\"accepted\": 500, \"rejected\": 0}, \"malformed\": {\"accepted\": 0, \"rejected\": 500}}, \"classification_failures\": 0, \"execution_policy\": \"all generated sources used -n and were confined to parser diagnostics\"}\n",
+      "duration_ns": 2982322750,
+      "stdout": "{\"schema\": 1, \"seed\": 20261002, \"requested\": 1000, \"executed\": 1000, \"duration_ns\": 2937410208, \"outcomes\": {\"valid\": {\"accepted\": 500, \"rejected\": 0}, \"malformed\": {\"accepted\": 0, \"rejected\": 500}}, \"classification_failures\": 0, \"execution_policy\": \"all generated sources used -n and were confined to parser diagnostics\"}\n",
       "stderr": ""
     },
     {
@@ -67,13 +67,15 @@
         "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
         "tools/benchmark.py",
         "--executable",
-        "/Users/aneeshkrishna/splice/build/splice",
+        "build-release/splice",
         "--repetitions",
-        "10"
+        "10",
+        "--warmup",
+        "2"
       ],
       "status": 0,
-      "duration_ns": 1846279000,
-      "stdout": "{\"workload_count\": 6, \"repetitions\": 10, \"dispatch_reduction_percent\": 14.244648582319842, \"target_status\": \"computed-not-accepted\"}\n",
+      "duration_ns": 1288284250,
+      "stdout": "{\"workload_count\": 6, \"repetitions\": 10, \"dispatch_reduction_percent\": 65.6738962401046, \"target_status\": \"computed-not-accepted\"}\n",
       "stderr": ""
     },
     {
@@ -83,8 +85,8 @@
         "tools/census.py"
       ],
       "status": 0,
-      "duration_ns": 82668416,
-      "stdout": "{\"commit\": \"01ea760b3c1427c81d76320a28b92b6f4043e7b8\", \"substantive_production_lines\": 4689, \"physical_lines\": 5415}\n",
+      "duration_ns": 58895042,
+      "stdout": "{\"commit\": \"b9d9116afc1d79fe3c5cf2cf3940ea71ef78e42e\", \"substantive_production_lines\": 10040, \"physical_lines\": 11491}\n",
       "stderr": ""
     },
     {
@@ -98,8 +100,8 @@
         "splice_pty_cases"
       ],
       "status": 0,
-      "duration_ns": 752168250,
-      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 6: splice_pty_cases\n1/1 Test #6: splice_pty_cases .................   Passed    0.72 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.73 sec\n",
+      "duration_ns": 678239875,
+      "stdout": "Test project /Users/aneeshkrishna/splice/build\n    Start 6: splice_pty_cases\n1/1 Test #6: splice_pty_cases .................   Passed    0.67 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.67 sec\n",
       "stderr": ""
     },
     {
@@ -109,7 +111,7 @@
         "tools/acceptance_test.py"
       ],
       "status": 0,
-      "duration_ns": 665361833,
+      "duration_ns": 411425750,
       "stdout": "acceptance mutation checks: missing, altered, and false-gate cases rejected\n",
       "stderr": ""
     }
@@ -166,17 +168,17 @@
     {
       "id": "performance-targets",
       "required": 1,
-      "actual": 0,
+      "actual": 1,
       "command_status": 0,
-      "verified": false,
+      "verified": true,
       "reason": "dispatch reduction and p95 must both meet frozen protocol targets"
     },
     {
       "id": "private-census",
       "required": 10000,
-      "actual": 4689,
+      "actual": 10040,
       "command_status": 0,
-      "verified": false,
+      "verified": true,
       "reason": "private ledger is ignored and not published"
     },
     {
@@ -214,8 +216,6 @@
   ],
   "campaign": "bounded-local",
   "unverified_required_campaigns": [
-    "performance-targets",
-    "private-census",
     "1200 authored cases",
     "20000 differential programs",
     "10000 malformed programs",
