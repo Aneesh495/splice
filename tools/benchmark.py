@@ -50,6 +50,10 @@ def main() -> int:
     parser.add_argument("--repetitions", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=2)
     args = parser.parse_args()
+    if args.repetitions < 1:
+        parser.error("--repetitions must be positive")
+    if args.warmup < 0:
+        parser.error("--warmup must be non-negative")
     protocol = json.loads((ROOT / "benchmarks" / "protocol.json").read_text())
     workloads = []
     for workload in protocol["corpus"]:
