@@ -21,7 +21,7 @@ def sample(command: list[str], repetitions: int, warmup: int) -> list[float]:
         subprocess.run(command, env={**os.environ, "LC_ALL": "C"}, stdin=subprocess.DEVNULL,
                        capture_output=True, text=True, check=False)
     pool = []
-    for _ in range(repetitions + 4):
+    for _ in range(repetitions):
         start = time.monotonic_ns()
         result = subprocess.run(command, env={**os.environ, "LC_ALL": "C"}, stdin=subprocess.DEVNULL,
                                 capture_output=True, text=True, check=False)
@@ -29,8 +29,7 @@ def sample(command: list[str], repetitions: int, warmup: int) -> list[float]:
         if result.returncode != 0 or not result.stdout.endswith("PROBE"):
             raise RuntimeError(f"late or missing launch marker: {command} status={result.returncode} stdout={result.stdout!r}")
         pool.append(elapsed)
-    pool.sort()
-    return pool[:repetitions]
+    return pool
 
 
 def percentile(values: list[float], fraction: float) -> float:
