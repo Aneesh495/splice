@@ -56,7 +56,7 @@ def main() -> int:
     protocol = json.loads((ROOT / "benchmarks" / "protocol.json").read_text())
     workloads = []
     for workload in protocol["corpus"]:
-        script = workload["script"] + "; /usr/bin/printf PROBE"
+        script = workload["script"] + " && /usr/bin/printf PROBE"
         splice_values = sample([args.executable, "-c", script], args.repetitions, args.warmup)
         row = {"id": workload["id"], "script": workload["script"], "splice": summarize("splice", splice_values),
                "raw_splice_ms": splice_values}
